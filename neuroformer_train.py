@@ -89,8 +89,9 @@ elif args.dataset == "V1AL":
     test_intervals, finetune_intervals, \
     callback = load_V1AL(config)
 
-spikes = data['spikes']
-stimulus = data['stimulus']
+# Change the data to experanto data
+spikes = data['spikes'] # data['spikes'].shape (2023 (neuron), 150578 (activation))
+stimulus = data['stimulus'] # data['stimulus'].shape (30117 (frame), 30 (H), 100 (W))
 
 # %%
 window = config.window.curr
@@ -196,7 +197,7 @@ finetune_dataset = NFDataloader(spikes_dict, tokenizer, config, dataset=args.dat
                                 frames=frames, intervals=finetune_intervals, modalities=modalities)
 
     
-# print(f'train: {len(train_dataset)}, test: {len(test_dataset)}')
+print(f'train: {len(train_dataset)}, test: {len(test_dataset)}')
 iterable = iter(train_dataset)
 x, y = next(iterable)
 print(x['id'])
@@ -208,7 +209,7 @@ config.id_vocab_size = tokenizer.ID_vocab_size
 model = Neuroformer(config, tokenizer)
 
 # Create a DataLoader
-loader = DataLoader(test_dataset, batch_size=2, shuffle=True, num_workers=0)
+loader = DataLoader(train_dataset, batch_size=2, shuffle=True, num_workers=0)
 iterable = iter(loader)
 x, y = next(iterable)
 recursive_print(y)
