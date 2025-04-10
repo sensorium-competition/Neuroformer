@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 import pickle
 import os
+import json
+from neuroformer.dataset import build_dataloader
 
 
 def split_data_by_interval(intervals, r_split=0.8, r_split_ft=0.1):
@@ -65,9 +67,9 @@ def load_V1AL(config, stimulus_path=None, response_path=None, top_p_ids=None):
 
     if stimulus_path is None:
         # stimulus_path = "/home/antonis/projects/slab/git/slab/transformer_exp/code/data/SImNew3D/stimulus/tiff"
-        stimulus_path = "data/Combo3_V1AL/Combo3_V1AL_stimulus.pt"
+        stimulus_path = "data/Combo3_V1AL/NF_1.5/Combo3_V1AL_stimulus.pt"
     if response_path is None:
-        response_path = "data/Combo3_V1AL/Combo3_V1AL.pkl"
+        response_path = "data/Combo3_V1AL/NF_1.5/Combo3_V1AL.pkl"
     
     data = {}
     data['spikes'] = pickle.load(open(response_path, "rb"))
@@ -115,3 +117,22 @@ def load_visnav(version, config, selection=None):
     train_intervals, test_intervals, finetune_intervals = split_data_by_interval(intervals, r_split=0.8, r_split_ft=0.01)
 
     return data, intervals, train_intervals, test_intervals, finetune_intervals, visnav_callback
+
+def experanto_callback(frames, frame_idx, n_frames, **args):
+    if isinstance(frames, np.ndarray):
+        frames = torch.from_numpy(frames)
+    f_idx_0 = max(0, frame_idx - n_frames)
+    f_idx_1 = f_idx_0 + n_frames
+    chosen_frames = frames[f_idx_0:f_idx_1].type(torch.float32).unsqueeze(0)
+    return chosen_frames
+
+def load_experanto(config):
+    # load pickled data
+    with open("data/Experanto/train_data-10000.pkl", "rb") as f:
+        data = pickle.load(f)
+
+    total_timesteps = data['spikes'].shape[1]
+    intervals = np.arange(0, total_timesteps * config.resolution.dt, config.window.curr)
+    train_intervals, test_intervals, finetune_intervals = split_data_by_interval(intervals, r_split=0.8, r_split_ft=0.01)
+
+    return data, intervals, train_intervals, test_intervals, finetune_intervals, experanto_callback

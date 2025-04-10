@@ -19,6 +19,8 @@ from PIL import Image
 from torchvision import transforms
 from skimage import io
 
+from utils import dict_to_device
+
 import copy
 
 
@@ -794,13 +796,14 @@ class NFDataloader(Dataset):
         """
 
         def __init__(self, spikes_dict, tokenizer, config, dataset=None, frames=None, 
-                     intervals=None, modalities=None, predict_behavior=False, **kwargs):
+                     intervals=None, modalities=None, predict_behavior=False, device="cpu", **kwargs):
         
             self.tokenizer = tokenizer
             self.stoi = tokenizer.stoi['ID']
             self.itos = tokenizer.itos['ID']
             self.stoi_dt = tokenizer.stoi['dt']
             self.itos_dt = tokenizer.itos['dt']
+            self.device = device
 
             # Access the needed variables from spikes_dict
             self.dt = spikes_dict["dt"]
@@ -991,7 +994,10 @@ class NFDataloader(Dataset):
                     #                                                   time: {time_array}"
                     neuron_array_time = neuron_array[:, idx]
                     for neuron, spikes in enumerate(neuron_array_time):
-                        spikes = round(spikes) # just in case we didn't round before
+                        if isinstance(spikes, torch.Tensor):
+                            spikes = torch.round(spikes) # just in case we didn't round before
+                        else:
+                            spikes = round(spikes) # just in case we didn't round before
                         neuron_firings += [neuron] * spikes
                         neuron_timings += [time] * spikes
                         assert len(neuron_firings) == len(neuron_timings), f"len neuron_firings: {len(neuron_firings)}, \
@@ -1051,10 +1057,10 @@ class NFDataloader(Dataset):
                     if isinstance(interval_, np.ndarray):
                         t['Interval'] = interval_[0].astype(float)
                         t['Trial'] = interval_[1].astype(int)
-                        t['Stimulus'] = interval_[2].astype(int) if self.dataset not in ['LRN', 'Distance-Coding', 'lateral', 'medial', 'V1AL'] else 0
+                        t['Stimulus'] = interval_[2].astype(int) if self.dataset not in ['LRN', 'Distance-Coding', 'lateral', 'medial', 'V1AL', 'experanto'] else 0
                     else:
                         t['Interval'] = interval_
-                        t['Trial'] = interval_[2].astype(int) if self.dataset not in ['LRN', 'Distance-Coding', 'lateral', 'medial', 'V1AL'] else 0
+                        t['Trial'] = interval_[2].astype(int) if self.dataset not in ['LRN', 'Distance-Coding', 'lateral', 'medial', 'V1AL', 'experanto'] else 0
                         t['Stimulus'] = torch.zeros(1, dtype=torch.long) if self.dataset not in ['LRN', 'Distance-Coding'] else None
 
                 x = collections.defaultdict(list)
@@ -1131,6 +1137,9 @@ class NFDataloader(Dataset):
                 x['cid'] = torch.tensor(current_id_interval)
                 x['pid'] = torch.tensor(prev_id_interval)
 
+                x = dict_to_device(x, device=self.device)
+                y = dict_to_device(y, device=self.device)
+
                 return x, y
 
 def combo3_V1AL_callback(frames, frame_idx, n_frames, **kwargs):
@@ -1149,6 +1158,14 @@ def combo3_V1AL_callback(frames, frame_idx, n_frames, **kwargs):
     return chosen_frames
 
 def visnav_callback(frames, frame_idx, n_frames, **kwargs):
+    if isinstance(frames, np.ndarray):
+        frames = torch.from_numpy(frames)
+    f_idx_0 = max(0, frame_idx - n_frames)
+    f_idx_1 = f_idx_0 + n_frames
+    chosen_frames = frames[f_idx_0:f_idx_1].type(torch.float32).unsqueeze(0)
+    return chosen_frames
+
+def experanto_callback(frames, frame_idx, n_frames, **kwargs):
     if isinstance(frames, np.ndarray):
         frames = torch.from_numpy(frames)
     f_idx_0 = max(0, frame_idx - n_frames)

@@ -38,9 +38,17 @@ def recursive_print(x, keys=None):
         for idx, value in enumerate(x):
             recursive_print(value, keys + [str(idx)])
     elif isinstance(x, torch.Tensor):
-        print("_".join(keys), x.shape, x.dtype)
+        print("_".join(keys), x.shape, x.dtype, x.device)
     else:
         print("_".join(keys), type(x))
+
+def dict_to_device(x, device='cpu'):
+    for key in x.keys():
+        if isinstance(x[key], torch.Tensor):    
+            x[key] = x[key].to(device)
+        else:
+            x[key] = x[key]
+    return x
 
 
 def get_attr(obj, name, default=None):
