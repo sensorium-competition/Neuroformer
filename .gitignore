@@ -137,6 +137,7 @@ dmypy.json
 **/data/**.mat
 **/data/**.npy
 **/data/**.pt
+**/data/**.pkl
 training/*.ipynb
 **/**.png
 **/**.mat
