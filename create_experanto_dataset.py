@@ -45,8 +45,6 @@ print('Dataset Created')
 print(len(dataset))
 print(dataset.__getitem__(0).keys())
 
-adsasd
-
 data = {"spikes":[], "stimulus":[]}
 num_samples = 2000
 for i in tqdm(range(num_samples)):
