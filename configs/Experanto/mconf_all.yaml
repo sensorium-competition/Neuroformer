@@ -1,3 +1,6 @@
+data:
+  path: data/Experanto/train_data_all-1000.pkl
+
 dropout:
   attn: 0.2
   embd: 0.2
@@ -10,9 +13,9 @@ dropout:
 
 block_size:
   behavior: 15
-  frame: 446
-  id: 100
-  prev_id: 700
+  frame: 60
+  id: 16
+  prev_id: 32
 
 layers:
   state_history: 6
@@ -32,53 +35,63 @@ sparse:
   topk_prev_id: null
 
 window:
-  frame: 0.15
-  curr: 0.05
-  prev: 0.05
-  speed: 0.05
+  frame: 2.0
+  curr: 2.0
+  prev: 4.0
+  treadmill: 2.0  # Adding this allows for loss being calculated for all modalities and adds modalities to the target
 
-# Hey! Uncomment here to input modalities!
-# ...or add your own :D
+# modality-specific parameters
 modalities:
   behavior:
     n_layers: 4
-    variables:
-      phi:
-        data: phi
-        dt: 0.05
+    variables: 
+      dilation:
+        data: dilation
+        dt: 0.03333333333333333
         objective: regression
         predict: true
-      speed:
-        data: speed
-        dt: 0.05
+      d_dilation:
+        data: d_dilation
+        dt: 0.03333333333333333
         objective: regression
         predict: true
-      th:
-        data: th
-        dt: 0.05
+      pupil_x:
+        data: pupil_x
+        dt: 0.03333333333333333
         objective: regression
         predict: true
-    window: 0.05
+      pupil_y:
+        data: pupil_y
+        dt: 0.03333333333333333
+        objective: regression
+        predict: true
+      treadmill:
+        data: treadmill
+        dt: 0.03333333333333333
+        objective: regression
+        predict: true
+    window: 0.03333333333333333
 
 predict: null
 
 frame_encoder:
   conv_layer: true
-  kernel_size: [3, 5, 5]
+  kernel_size: [3, 8, 8]
+  stride_size: [3, 4, 4]
   n_embd: 256
   n_embd_frames: 64
   resnet_backbone: false
 
 contrastive:
   contrastive: false
-  vars: ['id', 'frames', {'speed': 'name'}]
-  clip_embd: 512
+  vars: ['id', 'frames']
+  clip_embd: 1024
   clip_temp: 0.5
+
 # resolution for predictions
 resolution:
-  dt: 0.01
-  speed: 0.2
-  frames: 0.05
+  dt: 0.125
+  frames: 0.03333333333333333
 
 # GRU, MLP experiments
 mlp_only: false
@@ -96,3 +109,6 @@ pretrain: false
 temp_emb: true
 vit_encoder: true
 ingore_index_pad: true
+
+# selection of the data
+selection: sel1

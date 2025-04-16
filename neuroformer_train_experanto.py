@@ -116,6 +116,11 @@ elif args.dataset == "experanto":
     )
     data["spikes"] = torch.round(data["spikes"]).type(torch.int8).to(device).numpy()
     data["stimulus"] = torch.round(data["stimulus"]).type(torch.float32).unsqueeze(0).to(device).squeeze().numpy()
+    data["dilation"] = torch.round(data["dilation"]).type(torch.float32).to(device).numpy()
+    data["d_dilation"] = torch.round(data["d_dilation"]).type(torch.float32).to(device).numpy()
+    data["pupil_x"] = torch.round(data["pupil_x"]).type(torch.float32).to(device).numpy()
+    data["pupil_y"] = torch.round(data["pupil_y"]).type(torch.float32).to(device).numpy()
+    data["treadmill"] = torch.round(data["treadmill"]).type(torch.float32).to(device).numpy()
 
 
 # Change the data to experanto data
@@ -351,7 +356,7 @@ else:
         save_every=0,
         eval_every=5,
         min_eval_epoch=50,
-        use_wandb=True,
+        use_wandb=False,
         wandb_project="neuroformer-experanto",
         wandb_group=f"1.5.1_visnav_{args.dataset}",
         wandb_name=args.title,

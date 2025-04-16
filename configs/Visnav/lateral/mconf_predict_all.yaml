@@ -35,7 +35,7 @@ window:
   frame: 0.15
   curr: 0.05
   prev: 0.05
-  speed: 0.05
+  speed: 0.05 # I think this one is goes as an input to the model
 
 # Hey! Uncomment here to input modalities!
 # ...or add your own :D

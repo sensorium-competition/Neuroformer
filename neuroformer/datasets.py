@@ -128,7 +128,7 @@ def experanto_callback(frames, frame_idx, n_frames, **args):
 
 def load_experanto(config):
     # load pickled data
-    with open("data/Experanto/train_data-10000.pkl", "rb") as f:
+    with open(config.data.path, "rb") as f:
         data = pickle.load(f)
 
     total_timesteps = data['spikes'].shape[1]
