@@ -257,7 +257,7 @@ else:
                           show_grads=False,
                           ckpt_path=CKPT_PATH, no_pbar=False, 
                           dist=args.dist, save_every=0, eval_every=5, min_eval_epoch=50,
-                          use_wandb=True, wandb_project="neuroformer", 
+                          use_wandb=False, wandb_project="neuroformer", 
                           wandb_group=f"1.5.1_visnav_{args.dataset}", wandb_name=args.title)
 
     trainer = Trainer(model, train_dataset, test_dataset, tconf, config)

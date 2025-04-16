@@ -7,7 +7,7 @@ dataset:
       sampling_rate: 30
       chunk_size: 60
       valid_condition:
-        tier: oracle
+        tier: train
       offset: 0
       sample_stride: 1
       include_blanks: false
@@ -52,7 +52,7 @@ dataset:
         interpolation_mode: nearest_neighbor
 dataloader:
   batch_size: 64
-  shuffle: false
+  shuffle: true
   num_workers: 2
   pin_memory: true
   drop_last: true

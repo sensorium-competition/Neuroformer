@@ -45,20 +45,36 @@ print('Dataset Created')
 print(len(dataset))
 print(dataset.__getitem__(0).keys())
 
-data = {"spikes":[], "stimulus":[]}
-num_samples = 2000
+data = {"spikes":[], "stimulus":[], "dilation":[],"d_dilation":[], "pupil_x":[],"pupil_y":[], "treadmill":[]}
+num_samples = 10000
 for i in tqdm(range(num_samples)):
     x = dataset.__getitem__(i)
     data["spikes"].append(x["responses"])
     data["stimulus"].append(x["screen"])
+    data["dilation"].append(x["eye_tracker"][:,0])
+    data["d_dilation"].append(x["eye_tracker"][:,1])
+    data["pupil_x"].append(x["eye_tracker"][:,2])
+    data["pupil_y"].append(x["eye_tracker"][:,3])
+    data["treadmill"].append(x["treadmill"])
 
 data["spikes"] = torch.concat(data["spikes"], dim=0).T
 data["stimulus"] = torch.concat(data["stimulus"], dim=0).squeeze()
+data["dilation"] = torch.concat(data["dilation"], dim=0).squeeze()
+data["d_dilation"] = torch.concat(data["d_dilation"], dim=0).squeeze()
+data["pupil_x"] = torch.concat(data["pupil_x"], dim=0).squeeze()
+data["pupil_y"] = torch.concat(data["pupil_y"], dim=0).squeeze()
+data["treadmill"] = torch.concat(data["treadmill"], dim=0).squeeze()
 
+print("Data shapes:")
 print(data.keys())
 print(data["spikes"].shape)
 print(data["stimulus"].shape)
+print(data["dilation"].shape)
+print(data["d_dilation"].shape)
+print(data["pupil_x"].shape)
+print(data["pupil_y"].shape)
+print(data["treadmill"].shape)
 
 # save the data dictionary as a pickle file
-with open(f'data/Experanto/val_data-{num_samples}.pkl', 'wb') as f:
+with open(f'data/Experanto/train_data_all-{num_samples}.pkl', 'wb') as f:
     pickle.dump(data, f)
