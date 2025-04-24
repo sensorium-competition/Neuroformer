@@ -962,6 +962,7 @@ class Neuroformer(nn.Module):
                             self.modality_embeddings[modality_group][variable_name]['temp_emb'] = TemporalEmbedding(config.n_embd, config.dropout.id)
                     self.modality_embeddings[modality_group]['pos_emb'] = PositionalEncoding2D(config.n_embd)
 
+        self.modality_embeddings_sessions = nn.ModuleDict({scan: copy.deepcopy(self.modality_embeddings) for scan in config.data.scans})
 
         # -- Modality Projection Heads (if used as prediction) -- #
         self.modality_projection_heads = nn.ModuleDict()
@@ -975,6 +976,8 @@ class Neuroformer(nn.Module):
                             self.modality_projection_heads[modality_type][variable_name] = nn.Linear(config.n_embd, 1, bias=True)
                         if variable_config.get('objective') == 'classification':
                             self.modality_projection_heads[modality_type][variable_name] = nn.Linear(config.n_embd, variable_config.get('n_classes', 1), bias=False)
+
+        self.modality_projection_heads_sessions = nn.ModuleDict({scan: copy.deepcopy(self.modality_projection_heads) for scan in config.data.scans})
                         
         # TODO: add learnt frame embedding
         # frame embeddings
@@ -1010,8 +1013,11 @@ class Neuroformer(nn.Module):
        
         # -- ID, dt, Logit Projections -- #
         print(config.n_embd, self.dt_vocab_size)
-        self.head_id = nn.Linear(config.n_embd, len(self.tokenizer.stoi['ID'].keys()), bias=False)  
-        self.head_dt = nn.Linear(config.n_embd, len(self.tokenizer.stoi['dt'].keys()), bias=False)      
+        self.head_id = nn.Linear(config.n_embd, len(self.tokenizer.stoi['ID'].keys()), bias=False)
+        self.head_dt = nn.Linear(config.n_embd, len(self.tokenizer.stoi['dt'].keys()), bias=False)
+
+        self.head_id_sessions = nn.ModuleDict({scan: copy.deepcopy(self.head_id) for scan in config.data.scans})
+        self.head_dt_sessions = nn.ModuleDict({scan: copy.deepcopy(self.head_dt) for scan in config.data.scans})
         # if self.config.predict_behavior:
         #     self.head_behavior = nn.Linear(config.n_embd, config.n_behavior, bias=False)
 
@@ -1122,17 +1128,17 @@ class Neuroformer(nn.Module):
         features = collections.defaultdict(lambda: collections.defaultdict())
         for modality_group, group_features in x['modalities'].items():
             for variable_name, variable in group_features.items():
-                modality_emb = self.modality_embeddings[modality_group][variable_name]['mlp'](variable['value'])
+                modality_emb = self.modality_embeddings_sessions[self.session][modality_group][variable_name]['mlp'](variable['value'])
                 if modality_emb.dim() < 4:
                     modality_emb = modality_emb.unsqueeze(-2)
-                modality_temp_emb = self.modality_embeddings[modality_group][variable_name]['temp_emb'](variable['dt'].float()) if self.config.temp_emb and 'dt' in variable else 0
+                modality_temp_emb = self.modality_embeddings_sessions[self.session][modality_group][variable_name]['temp_emb'](variable['dt'].float()) if self.config.temp_emb and 'dt' in variable else 0
                 n_vars = variable['value'].size(1)
                 modality_temp_emb = modality_temp_emb.repeat(1, n_vars, 1)
                 modality_emb = rearrange(modality_emb, 'b t c e -> b (t c) e')
                 modality_emb = self.id_drop(modality_emb + modality_temp_emb)
                 features[modality_group][variable_name] = modality_emb
             features[modality_group]['all'] = torch.cat([features[modality_group][variable_name] for variable_name in features[modality_group]], dim=1).unsqueeze(-2)
-            features[modality_group]['all'] = features[modality_group]['all'] + self.modality_embeddings[modality_group]['pos_emb'](features[modality_group]['all'])
+            features[modality_group]['all'] = features[modality_group]['all'] + self.modality_embeddings_sessions[self.session][modality_group]['pos_emb'](features[modality_group]['all'])
             features[modality_group]['all'] = rearrange(features[modality_group]['all'], 'b t 1 e -> b t e')
         return features
 
@@ -1202,6 +1208,7 @@ class Neuroformer(nn.Module):
         idx = x['id']
         pad = x['pad']
         B, t = idx.size()
+        self.session = x['session'][0]
         
         features, pad = self.process_features(x)
         if get_attr(self.config, 'mlp_only', False):
@@ -1212,8 +1219,8 @@ class Neuroformer(nn.Module):
             x, _ = self.gru(features['id'], features['id_prev'])
         else:
             x = self.neural_visual_transformer(features)
-        id_logits = self.head_id(x)
-        dt_logits = self.head_dt(x)    # (B, T_id, 1)
+        id_logits = self.head_id_sessions[self.session](x)
+        dt_logits = self.head_dt_sessions[self.session](x)    # (B, T_id, 1)
         if get_attr(self.config, 'predict_behavior', False):
             behavior_logits = self.predict_var(x)
 
@@ -1265,7 +1272,7 @@ class Neuroformer(nn.Module):
                 for modality_type, modality_config in self.modalities_config.items():
                     for variable_name, variable_config in modality_config['variables'].items():
                         if variable_config.get('predict', False) and variable_name in targets['modalities'][modality_type]:
-                            modality_projection = self.modality_projection_heads[modality_type][variable_name](x_mean)
+                            modality_projection = self.modality_projection_heads_sessions[self.session][modality_type][variable_name](x_mean)
                             modality_target = targets['modalities'][modality_type][variable_name]['value']
                             if variable_config['objective'] == 'regression':
                                 loss_modality = F.mse_loss(modality_projection, modality_target.view(B, -1))

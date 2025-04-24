@@ -70,6 +70,8 @@ def all_device(data, device):
         return [all_device(v, device) for v in data if v is not None]
     elif isinstance(data, tuple):
         return tuple(all_device(v, device) for v in data if v is not None)
+    elif isinstance(data, str):
+        return data
     else:
         return data.to(device)
 

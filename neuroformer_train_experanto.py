@@ -114,13 +114,22 @@ elif args.dataset == "experanto":
     data, intervals, train_intervals, test_intervals, finetune_intervals, callback = (
         load_experanto(config)
     )
+    # data["spikes"] = torch.round(data["spikes"]).type(torch.int8).to(device).numpy()
+    # data["stimulus"] = torch.round(data["stimulus"]).type(torch.float32).unsqueeze(0).to(device).squeeze().numpy()
+    # data["dilation"] = torch.round(data["dilation"]).type(torch.float32).to(device).numpy()
+    # data["d_dilation"] = torch.round(data["d_dilation"]).type(torch.float32).to(device).numpy()
+    # data["pupil_x"] = torch.round(data["pupil_x"]).type(torch.float32).to(device).numpy()
+    # data["pupil_y"] = torch.round(data["pupil_y"]).type(torch.float32).to(device).numpy()
+    # data["treadmill"] = torch.round(data["treadmill"]).type(torch.float32).to(device).numpy()
+
     data["spikes"] = torch.round(data["spikes"]).type(torch.int8).to(device).numpy()
-    data["stimulus"] = torch.round(data["stimulus"]).type(torch.float32).unsqueeze(0).to(device).squeeze().numpy()
-    data["dilation"] = torch.round(data["dilation"]).type(torch.float32).to(device).numpy()
-    data["d_dilation"] = torch.round(data["d_dilation"]).type(torch.float32).to(device).numpy()
-    data["pupil_x"] = torch.round(data["pupil_x"]).type(torch.float32).to(device).numpy()
-    data["pupil_y"] = torch.round(data["pupil_y"]).type(torch.float32).to(device).numpy()
-    data["treadmill"] = torch.round(data["treadmill"]).type(torch.float32).to(device).numpy()
+    data["stimulus"] = data["stimulus"].type(torch.float32).unsqueeze(0).to(device).squeeze().numpy()
+    data["dilation"] = data["dilation"].type(torch.float32).to(device).numpy()
+    data["d_dilation"] = data["d_dilation"].type(torch.float32).to(device).numpy()
+    data["pupil_x"] = data["pupil_x"].type(torch.float32).to(device).numpy()
+    data["pupil_y"] = data["pupil_y"].type(torch.float32).to(device).numpy()
+    data["treadmill"] = data["treadmill"].type(torch.float32).to(device).numpy()
+    data["session"] = data["session"]
 
 
 # Change the data to experanto data
@@ -144,6 +153,7 @@ spikes_dict = {
     "window": config.window.curr,
     "window_prev": config.window.prev,
     "frame_window": config.window.frame,
+    "session": data["session"],
 }
 
 """ 

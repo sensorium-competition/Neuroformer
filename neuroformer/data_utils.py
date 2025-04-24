@@ -804,6 +804,7 @@ class NFDataloader(Dataset):
             self.stoi_dt = tokenizer.stoi['dt']
             self.itos_dt = tokenizer.itos['dt']
             self.device = device
+            self.session = spikes_dict['session']
 
             # Access the needed variables from spikes_dict
             self.dt = spikes_dict["dt"]
@@ -1136,6 +1137,7 @@ class NFDataloader(Dataset):
 
                 x['cid'] = torch.tensor(current_id_interval)
                 x['pid'] = torch.tensor(prev_id_interval)
+                x['session'] = self.session
 
                 x = dict_to_device(x, device=self.device)
                 y = dict_to_device(y, device=self.device)

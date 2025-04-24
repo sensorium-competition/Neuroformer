@@ -20,7 +20,8 @@ from tqdm import tqdm
 # train_dataloader, val_dataloader = build_dataloader(loader_config)
 # print('Dataloader Created')
 
-path = '/mnt/vast-react/projects/neural_foundation_model/dynamic29513-3-5-Video-full'
+paths = ['/mnt/vast-react/projects/neural_foundation_model/dynamic29514-2-9-Video-full']
+# paths = ['/mnt/vast-react/projects/neural_foundation_model/dynamic29513-3-5-Video-full', '/mnt/vast-react/projects/neural_foundation_model/dynamic29514-2-9-Video-full']
 config_path = 'experanto_chunck_dataset.yaml'
 
 # Train and test yaml diff
@@ -37,25 +38,30 @@ config_path = 'experanto_chunck_dataset.yaml'
 # >   shuffle: true
 
 cfg = OmegaConf.load(config_path)
+data = {"spikes":[], "stimulus":[], "dilation":[],"d_dilation":[], "pupil_x":[],"pupil_y":[], "treadmill":[], "session":[]}
+num_samples = 1000
 
-print('Create Dataset')
-dataset = ChunkDataset(path, **cfg.dataset)
-print('Dataset Created')
+for path in paths:
+    print(f'Loading {path}')
+    print('Create Dataset')
+    dataset = ChunkDataset(path, **cfg.dataset)
+    print('Dataset Created')
 
-print(len(dataset))
-print(dataset.__getitem__(0).keys())
+    print(len(dataset))
+    print(dataset.__getitem__(0).keys())
 
-data = {"spikes":[], "stimulus":[], "dilation":[],"d_dilation":[], "pupil_x":[],"pupil_y":[], "treadmill":[]}
-num_samples = 10000
-for i in tqdm(range(num_samples)):
-    x = dataset.__getitem__(i)
-    data["spikes"].append(x["responses"])
-    data["stimulus"].append(x["screen"])
-    data["dilation"].append(x["eye_tracker"][:,0])
-    data["d_dilation"].append(x["eye_tracker"][:,1])
-    data["pupil_x"].append(x["eye_tracker"][:,2])
-    data["pupil_y"].append(x["eye_tracker"][:,3])
-    data["treadmill"].append(x["treadmill"])
+    session = path.split('/')[-1]
+    data["session"] = session
+
+    for i in tqdm(range(num_samples)):
+        x = dataset.__getitem__(i)
+        data["spikes"].append(x["responses"])
+        data["stimulus"].append(x["screen"])
+        data["dilation"].append(x["eye_tracker"][:,0])
+        data["d_dilation"].append(x["eye_tracker"][:,1])
+        data["pupil_x"].append(x["eye_tracker"][:,2])
+        data["pupil_y"].append(x["eye_tracker"][:,3])
+        data["treadmill"].append(x["treadmill"])
 
 data["spikes"] = torch.concat(data["spikes"], dim=0).T
 data["stimulus"] = torch.concat(data["stimulus"], dim=0).squeeze()
@@ -74,7 +80,8 @@ print(data["d_dilation"].shape)
 print(data["pupil_x"].shape)
 print(data["pupil_y"].shape)
 print(data["treadmill"].shape)
+print(data["session"])
 
 # save the data dictionary as a pickle file
-with open(f'data/Experanto/train_data_all-{num_samples}.pkl', 'wb') as f:
+with open(f'data/Experanto/train_data_all_sess-{session}-{num_samples}.pkl', 'wb') as f:
     pickle.dump(data, f)
