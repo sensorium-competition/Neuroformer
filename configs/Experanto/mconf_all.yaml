@@ -1,5 +1,7 @@
 data:
-  path: data/Experanto/train_data_all_sess-dynamic29514-2-9-Video-full-1000.pkl
+  paths: 
+    - data/Experanto/train_data_all_sess-dynamic29513-3-5-Video-full-1000.pkl
+    - data/Experanto/train_data_all_sess-dynamic29514-2-9-Video-full-1000.pkl
   scans: 
     - dynamic29513-3-5-Video-full
     - dynamic29514-2-9-Video-full

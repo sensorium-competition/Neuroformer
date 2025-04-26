@@ -922,7 +922,7 @@ class Neuroformer(nn.Module):
     
     """
 
-    def __init__(self, config, tokenizer):
+    def __init__(self, config, tokenizers):
         super().__init__()
 
         self.device = 'cpu'
@@ -931,12 +931,15 @@ class Neuroformer(nn.Module):
 
         self.config = config
         self.modalities_config = object_to_dict(self.config.modalities) if get_attr(self.config, 'modalities') else None
-        self.tokenizer = tokenizer
-        self.id_vocab_size = tokenizer.ID_vocab_size
-        self.dt_vocab_size = tokenizer.dt_vocab_size
+        self.tokenizers = tokenizers
+        # self.id_vocab_size = tokenizers.ID_vocab_size
+        # self.dt_vocab_size = tokenizers.dt_vocab_size
+        self.id_vocab_size_sessions = {session:tokenizers[session].ID_vocab_size for session in config.data.scans}
+        self.dt_vocab_size_sessions = {session:tokenizers[session].dt_vocab_size for session in config.data.scans}
 
         # -- Input Embedding Stem -- #        self.n_embd = config.n_embd
-        self.tok_emb = nn.Embedding(self.id_vocab_size, config.n_embd)
+        # self.tok_emb = nn.Embedding(self.id_vocab_size, config.n_embd)
+        self.tok_emb_session = nn.ModuleDict({session : nn.Embedding(self.id_vocab_size_sessions[session], config.n_embd) for session in config.data.scans})
         if config.pos_emb:
             self.pos_emb = nn.Parameter(torch.zeros(1, config.block_size.id, config.n_embd))
             self.pos_emb_prev = nn.Parameter(torch.zeros(1, config.block_size.prev_id, config.n_embd))
@@ -1012,12 +1015,12 @@ class Neuroformer(nn.Module):
         self.neural_visual_transformer = MultimodalTransformer(config)
        
         # -- ID, dt, Logit Projections -- #
-        print(config.n_embd, self.dt_vocab_size)
-        self.head_id = nn.Linear(config.n_embd, len(self.tokenizer.stoi['ID'].keys()), bias=False)
-        self.head_dt = nn.Linear(config.n_embd, len(self.tokenizer.stoi['dt'].keys()), bias=False)
+        print(config.n_embd, self.dt_vocab_size_sessions, self.id_vocab_size_sessions)
+        # self.head_id = nn.Linear(config.n_embd, len(self.tokenizer.stoi['ID'].keys()), bias=False)
+        # self.head_dt = nn.Linear(config.n_embd, len(self.tokenizer.stoi['dt'].keys()), bias=False)
 
-        self.head_id_sessions = nn.ModuleDict({scan: copy.deepcopy(self.head_id) for scan in config.data.scans})
-        self.head_dt_sessions = nn.ModuleDict({scan: copy.deepcopy(self.head_dt) for scan in config.data.scans})
+        self.head_id_sessions = nn.ModuleDict({session: nn.Linear(config.n_embd, len(self.tokenizers[session].stoi['ID'].keys()), bias=False) for session in config.data.scans})
+        self.head_dt_sessions = nn.ModuleDict({session: nn.Linear(config.n_embd, len(self.tokenizers[session].stoi['dt'].keys()), bias=False) for session in config.data.scans})
         # if self.config.predict_behavior:
         #     self.head_behavior = nn.Linear(config.n_embd, config.n_behavior, bias=False)
 
@@ -1169,8 +1172,8 @@ class Neuroformer(nn.Module):
         # frame_temporal_embeddings = self.temp_emb_frames(self.frame_temp_emb_seq)
         
         # Extract ID features
-        prev_token_embeddings = self.id_drop(self.tok_emb(p_idx) + prev_id_temporal_embeddings + prev_id_position_embeddings)
-        token_embeddings = self.id_drop(self.tok_emb(idx) + id_temporal_embeddings + id_position_embeddings) # each index maps to a (learnable) vector
+        prev_token_embeddings = self.id_drop(self.tok_emb_session[self.session](p_idx) + prev_id_temporal_embeddings + prev_id_position_embeddings)
+        token_embeddings = self.id_drop(self.tok_emb_session[self.session](idx) + id_temporal_embeddings + id_position_embeddings) # each index maps to a (learnable) vector
 
         # Extract image features and add time embeddings
         if 'frames' in x and frames != None:
@@ -1208,7 +1211,10 @@ class Neuroformer(nn.Module):
         idx = x['id']
         pad = x['pad']
         B, t = idx.size()
-        self.session = x['session'][0]
+        if isinstance(x['session'], list):
+            self.session = x['session'][0]
+        else:
+            self.session = x['session']
         
         features, pad = self.process_features(x)
         if get_attr(self.config, 'mlp_only', False):
@@ -1243,8 +1249,10 @@ class Neuroformer(nn.Module):
 
             
             ## separate ids and dts into the neural data and eos tokens
-            eos_id_tok = self.tokenizer.stoi['ID']['EOS']
-            eos_dt_tok = self.tokenizer.stoi['dt']['EOS']
+            # eos_id_tok = self.tokenizer.stoi['ID']['EOS']
+            # eos_dt_tok = self.tokenizer.stoi['dt']['EOS']
+            eos_id_tok = self.tokenizers[self.session].stoi['ID']['EOS']
+            eos_dt_tok = self.tokenizers[self.session].stoi['dt']['EOS']
             eos_id_logits, eos_dt_logits, \
             id_logits_no_eos, dt_logits_no_eos, \
             targets = separate_eos_tokens(eos_id_tok, eos_dt_tok, 
@@ -1258,9 +1266,9 @@ class Neuroformer(nn.Module):
                                           ignore_index=self.config.ignore_index_dt, weight=self.class_weights_dt)
             elif get_attr(self.config, 'ignore_index_pad', True):
                 loss_id =  F.cross_entropy(id_logits.view(-1, id_logits.size(-1)), targets['id'].view(-1), 
-                                           ignore_index=self.tokenizer.stoi['ID']['PAD']) 
+                                           ignore_index=self.tokenizers[self.session].stoi['ID']['PAD']) 
                 loss_time = F.cross_entropy(dt_logits.view(-1, dt_logits.size(-1)), targets['dt'].view(-1), 
-                                            ignore_index=self.tokenizer.stoi['dt']['PAD'])
+                                            ignore_index=self.tokenizers[self.session].stoi['dt']['PAD'])
             else:
                 loss_id = F.cross_entropy(id_logits.view(-1, id_logits.size(-1)), targets['id'].view(-1))
                 loss_time = F.cross_entropy(dt_logits.view(-1, dt_logits.size(-1)), targets['dt'].view(-1))
@@ -1331,9 +1339,9 @@ class Neuroformer(nn.Module):
                     _, ix_top_k = torch.topk(probs_neurons, k=1, dim=-1)
                     pred_neurons = ix_top_k.detach().flatten()
                     true_neurons = id_targets.detach().flatten()
-                    precision_score = torchmetrics.functional.precision(true_neurons, pred_neurons, task='multiclass', num_classes=self.id_vocab_size).to(self.device)
-                    recall_score = torchmetrics.functional.recall(true_neurons, pred_neurons, task='multiclass', num_classes=self.id_vocab_size).to(self.device)
-                    F1_score = torchmetrics.functional.f1_score(true_neurons, pred_neurons, task='multiclass', num_classes=self.id_vocab_size).to(self.device)
+                    precision_score = torchmetrics.functional.precision(true_neurons, pred_neurons, task='multiclass', num_classes=self.id_vocab_size_sessions[self.session]).to(self.device)
+                    recall_score = torchmetrics.functional.recall(true_neurons, pred_neurons, task='multiclass', num_classes=self.id_vocab_size_sessions[self.session]).to(self.device)
+                    F1_score = torchmetrics.functional.f1_score(true_neurons, pred_neurons, task='multiclass', num_classes=self.id_vocab_size_sessions[self.session]).to(self.device)
 
                     probs_id.append(probs_neurons)
                     if (precision, recall, F1) != None:

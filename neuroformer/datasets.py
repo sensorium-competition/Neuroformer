@@ -126,9 +126,9 @@ def experanto_callback(frames, frame_idx, n_frames, **args):
     chosen_frames = frames[f_idx_0:f_idx_1].type(torch.float32).unsqueeze(0)
     return chosen_frames
 
-def load_experanto(config):
+def load_experanto(config, data_path):
     # load pickled data
-    with open(config.data.path, "rb") as f:
+    with open(data_path, "rb") as f:
         data = pickle.load(f)
 
     total_timesteps = data['spikes'].shape[1]
