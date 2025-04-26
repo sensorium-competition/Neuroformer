@@ -20,7 +20,7 @@ from tqdm import tqdm
 # train_dataloader, val_dataloader = build_dataloader(loader_config)
 # print('Dataloader Created')
 
-paths = ['/mnt/vast-react/projects/neural_foundation_model/dynamic29514-2-9-Video-full']
+paths = ['/mnt/vast-react/projects/neural_foundation_model/dynamic29513-3-5-Video-full']
 # paths = ['/mnt/vast-react/projects/neural_foundation_model/dynamic29513-3-5-Video-full', '/mnt/vast-react/projects/neural_foundation_model/dynamic29514-2-9-Video-full']
 config_path = 'experanto_chunck_dataset.yaml'
 
@@ -39,7 +39,7 @@ config_path = 'experanto_chunck_dataset.yaml'
 
 cfg = OmegaConf.load(config_path)
 data = {"spikes":[], "stimulus":[], "dilation":[],"d_dilation":[], "pupil_x":[],"pupil_y":[], "treadmill":[], "session":[]}
-num_samples = 1000
+num_samples = 10000
 
 for path in paths:
     print(f'Loading {path}')

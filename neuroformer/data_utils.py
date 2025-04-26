@@ -1143,6 +1143,46 @@ class NFDataloader(Dataset):
                 y = dict_to_device(y, device=self.device)
 
                 return x, y
+        
+class NFCombinedDataset(Dataset):
+    def __init__(self, datasets, block_size=32, randomized=False):
+        self.datasets = datasets
+        self.block_size = block_size
+        self.randomized = randomized
+        
+        # Create a list of available indices for each dataset
+        self.available_indices = [list(range(len(ds))) for ds in datasets]
+        if self.randomized:
+            for idx_list in self.available_indices:
+                random.shuffle(idx_list)  # shuffle initially if randomized
+        
+        # Build the final sampling plan
+        self.plan = []
+        still_active = [i for i in range(len(datasets)) if len(self.available_indices[i]) > 0]
+
+        while still_active:
+            for dataset_idx in still_active.copy():  # copy since we'll modify still_active
+                idxs = self.available_indices[dataset_idx]
+                if not idxs:
+                    still_active.remove(dataset_idx)
+                    continue
+
+                # Take up to block_size elements
+                take = min(self.block_size, len(idxs))
+                if self.randomized:
+                    block_samples = [idxs.pop() for _ in range(take)]
+                else:
+                    block_samples = [idxs.pop(0) for _ in range(take)]  # sequential if not randomized
+
+                block = [(dataset_idx, sample_idx) for sample_idx in block_samples]
+                self.plan.extend(block)
+
+    def __len__(self):
+        return len(self.plan)
+
+    def __getitem__(self, idx):
+        dataset_idx, sample_idx = self.plan[idx]
+        return self.datasets[dataset_idx][sample_idx]
 
 def combo3_V1AL_callback(frames, frame_idx, n_frames, **kwargs):
     """

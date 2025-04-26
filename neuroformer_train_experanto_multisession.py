@@ -39,7 +39,7 @@ from neuroformer.utils import (
     create_modalities_dict,
 )
 from neuroformer.visualize import set_plot_params
-from neuroformer.data_utils import round_n, Tokenizer, NFDataloader
+from neuroformer.data_utils import round_n, Tokenizer, NFDataloader, NFCombinedDataset
 from neuroformer.datasets import load_visnav, load_V1AL, load_experanto
 from neuroformer.dataset import build_dataloader
 from experanto.utils import LongCycler
@@ -302,25 +302,24 @@ for data_path in config.data.paths:
     finetune_datasets[data["session"]] = finetune_dataset
     tokenizers[data["session"]] = tokenizer
 
-train_dataloaders = LongCycler({session : DataLoader(train_datasets[session], batch_size=2, shuffle=True, num_workers=0) for session in train_datasets.keys()})
-test_dataloaders = LongCycler({session : DataLoader(test_datasets[session], batch_size=2, shuffle=True, num_workers=0) for session in test_datasets.keys()})
-finetune_dataloaders = LongCycler({session : DataLoader(finetune_datasets[session], batch_size=2, shuffle=True, num_workers=0) for session in finetune_datasets.keys()})
+# train_dataloaders = LongCycler({session : DataLoader(train_datasets[session], batch_size=2, shuffle=True, num_workers=0) for session in train_datasets.keys()})
+# test_dataloaders = LongCycler({session : DataLoader(test_datasets[session], batch_size=2, shuffle=True, num_workers=0) for session in test_datasets.keys()})
+# finetune_dataloaders = LongCycler({session : DataLoader(finetune_datasets[session], batch_size=2, shuffle=True, num_workers=0) for session in finetune_datasets.keys()})
 
 # Create model
 model = Neuroformer(config, tokenizers).to(device)
 
 # Create a DataLoader
-loader = DataLoader(test_dataset, batch_size=2, shuffle=True, num_workers=0)
+loader = DataLoader(NFCombinedDataset([test_datasets[session] for session in test_datasets.keys()], block_size=2, randomized=True), batch_size=2, shuffle=False, num_workers=0)
 iterable = iter(loader)
 x, y = next(iterable)
 # dict_to_device(y, device=device)
 recursive_print(y)
 preds, features, loss = model(x, y)
 
-# Set training parameters
-MAX_EPOCHS = 250
-BATCH_SIZE = 32 * 1
-SHUFFLE = True
+train_dataset = NFCombinedDataset([train_datasets[session] for session in train_datasets.keys()], block_size=config.training.batch_size, randomized=True)
+test_dataset = NFCombinedDataset([test_datasets[session] for session in test_datasets.keys()], block_size=config.training.batch_size, randomized=False)
+finetune_dataset = NFCombinedDataset([finetune_datasets[session] for session in finetune_datasets.keys()], block_size=config.training.batch_size, randomized=False)
 
 if config.gru_only:
     model_name = "GRU"
@@ -352,8 +351,8 @@ if args.sweep_id is not None:
 else:
     # Create a TrainerConfig and Trainer
     tconf = TrainerConfig(
-        max_epochs=MAX_EPOCHS,
-        batch_size=BATCH_SIZE,
+        max_epochs=config.training.epochs,
+        batch_size=config.training.batch_size, # This should be equal to the block size
         learning_rate=1e-4,
         num_workers=16,
         lr_decay=True,
@@ -361,8 +360,8 @@ else:
         warmup_tokens=8e7,
         decay_weights=True,
         weight_decay=1.0,
-        shuffle=SHUFFLE,
-        final_tokens=len(train_dataset) * (config.block_size.id) * (MAX_EPOCHS),
+        shuffle=False, # this shuffle should stay false, because shuffling is done in the dataset and the dataloader should not do shuffling
+        final_tokens=len(train_dataset) * (config.block_size.id) * (config.training.epochs),
         clip_norm=1.0,
         grad_norm_clip=1.0,
         show_grads=False,
@@ -372,7 +371,7 @@ else:
         save_every=0,
         eval_every=5,
         min_eval_epoch=50,
-        use_wandb=False,
+        use_wandb=True,
         wandb_project="neuroformer-experanto",
         wandb_group=f"1.5.1_visnav_{args.dataset}",
         wandb_name=args.title,

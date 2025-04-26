@@ -217,7 +217,7 @@ class Trainer:
             is_train = split == 'train'
             model.train(is_train)
             data = self.train_dataset if is_train else self.test_dataset
-            sampler = DistributedSampler(data, shuffle=True) if config.dist else None
+            sampler = DistributedSampler(data, shuffle=False) if config.dist else None
             loader = DataLoader(data, pin_memory=False,
                                 batch_size=config.batch_size,
                                 num_workers=config.num_workers, sampler=sampler)
