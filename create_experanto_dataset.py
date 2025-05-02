@@ -22,6 +22,7 @@ from tqdm import tqdm
 # print('Dataloader Created')
 
 base_path = "/mnt/vast-react/projects/neural_foundation_model/"
+save_path = "/mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/"
 data = [
     "upsampling_without_hamming_30.0Hz/dynamic21067-10-18-Video-512cdd91f251cf74fff81375926f4002_30hz",
     "upsampling_without_hamming_30.0Hz/dynamic22846-10-16-Video-512cdd91f251cf74fff81375926f4002_30hz",
@@ -115,6 +116,8 @@ for path in paths:
     print(data["session"])
 
     # save the data dictionary as a pickle file
-    # /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/
-    with open(f"data/Experanto/30Hz/{session}-{num_samples}.pkl", "wb") as f:
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
+    with open(f"/mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/{session}.pkl", "wb") as f:
         pickle.dump(data, f)

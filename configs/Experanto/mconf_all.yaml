@@ -49,10 +49,6 @@ window:
   curr: 2.0
   prev: 4.0
   treadmill: 2.0  # Adding this allows for loss being calculated for all modalities and adds modalities to the target
-  dillation: 2.0
-  d_dilation: 2.0
-  pupil_x: 2.0
-  pupil_y: 2.0
 
 # modality-specific parameters
 modalities:
@@ -61,30 +57,30 @@ modalities:
     variables: 
       dilation:
         data: dilation
-        dt: 0.05
+        dt: 0.03333333333333333
         objective: regression
         predict: true
       d_dilation:
         data: d_dilation
-        dt: 0.05
+        dt: 0.03333333333333333
         objective: regression
         predict: true
       pupil_x:
         data: pupil_x
-        dt: 0.05
+        dt: 0.03333333333333333
         objective: regression
         predict: true
       pupil_y:
         data: pupil_y
-        dt: 0.05
+        dt: 0.03333333333333333
         objective: regression
         predict: true
       treadmill:
         data: treadmill
-        dt: 0.05
+        dt: 0.03333333333333333
         objective: regression
         predict: true
-    window: 2.0
+    window: 0.03333333333333333
 
 predict: null
 
@@ -104,7 +100,7 @@ contrastive:
 
 # resolution for predictions
 resolution:
-  dt: 0.0333333333333333
+  dt: 0.125
   frames: 0.03333333333333333
 
 # GRU, MLP experiments
