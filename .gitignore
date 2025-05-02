@@ -172,3 +172,5 @@ training/*.ipynb
 **/envs
 **/.vscode
 **/.history
+
+slurm_files/*

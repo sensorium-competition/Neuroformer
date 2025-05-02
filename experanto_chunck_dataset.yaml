@@ -9,24 +9,18 @@ dataset:
       valid_condition:
         tier: train
       offset: 0
-      sample_stride: 1
-      include_blanks: false
+      sample_stride: 1 # might be 60 
+      include_blanks: true
       transforms:
-        normalization: normalize
-        Resize:
-          _target_: torchvision.transforms.v2.Resize
-          size:
-          - 36
-          - 64
+        normalization: 
+          means: 113
+          stds: 59
       interpolation:
-        rescale: true
-        rescale_size:
-        - 144
-        - 256
+        rescale: false
     responses:
       keep_nans: false
-      sampling_rate: 8
-      chunk_size: 16
+      sampling_rate: 30
+      chunk_size: 60
       offset: 0
       transforms:
         normalization: standardize
@@ -34,22 +28,32 @@ dataset:
         interpolation_mode: nearest_neighbor
     eye_tracker:
       keep_nans: false
-      sampling_rate: 30
-      chunk_size: 60
+      sampling_rate: 20
+      chunk_size: 40
       offset: 0
       transforms:
         normalization: normalize
       interpolation:
         interpolation_mode: nearest_neighbor
+      filters:
+        nan_filter:
+          __target__: experanto.filters.common_filters.nan_filter
+          __partial__: True
+          vicinity: 0.05
     treadmill:
       keep_nans: false
-      sampling_rate: 30
-      chunk_size: 60
+      sampling_rate: 20
+      chunk_size: 40
       offset: 0
       transforms:
         normalization: normalize
       interpolation:
         interpolation_mode: nearest_neighbor
+      filters:
+        nan_filter:
+          __target__: experanto.filters.common_filters.nan_filter
+          __partial__: True
+          vicinity: 0.05
 dataloader:
   batch_size: 64
   shuffle: true

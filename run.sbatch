@@ -4,9 +4,10 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --partition=react    # see https://www.hlrn.de/doc/display/PUB/Compute+node+partitions for a list of accessible hlrn partitions
 #SBATCH -G A100:1                   # number of gpus per node
-#SBATCH --time 0-24:00
+#SBATCH --time 0-48:00
 #SBATCH --constraint "inet" 
 #SBATCH -A agsinz_foundation_model_brain
+#SBATCH --mem=100G
 #SBATCH --output=./slurm_files/slurm-%x-%j.out     # where to write output, %x give job name, %j names job id
 #SBATCH --error=./slurm_files/slurm-%x-%j.err      # where to write slurm error
 #SBATCH --mail-type=begin            # send mail when job begins
@@ -36,4 +37,4 @@ python --version
 python -m torch.utils.collect_env
 #nvcc -V
 # python neuroformer_train.py --dataset V1AL --config configs/Visnav/lateral/mconf_pretrain.yaml
-python neuroformer_train_experanto_multisession.py --dataset experanto --config configs/Experanto/mconf_all.yaml
+python neuroformer_train_experanto_multisession.py --dataset experanto --config configs/Experanto/mconf.yaml
