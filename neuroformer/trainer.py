@@ -231,6 +231,10 @@ class Trainer:
                 x = all_device(x, self.device)
                 y = all_device(y, self.device)
 
+                if not isinstance(x, dict):
+                    print(f"Skipping batch {it}")
+                    continue
+
                 # forward the model
                 with torch.set_grad_enabled(is_train):
                     preds, features, loss = model(x, y)

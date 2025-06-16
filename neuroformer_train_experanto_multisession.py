@@ -43,6 +43,7 @@ from neuroformer.data_utils import round_n, Tokenizer, NFDataloader, NFCombinedD
 from neuroformer.datasets import load_visnav, load_V1AL, load_experanto
 from neuroformer.dataset import build_dataloader
 from experanto.utils import LongCycler
+from tqdm import tqdm
 
 
 parent_path = os.path.dirname(os.path.dirname(os.getcwd())) + "/"
@@ -98,7 +99,7 @@ train_datasets = {}
 test_datasets = {}
 finetune_datasets = {}
 tokenizers = {}
-for data_path in config.data.paths:
+for i, data_path in enumerate(config.data.paths):
     if args.dataset in ["lateral", "medial"]:
         device = torch.device("cpu")
         data, intervals, train_intervals, test_intervals, finetune_intervals, callback = (
@@ -120,8 +121,18 @@ for data_path in config.data.paths:
             load_experanto(config, data_path)
         )
 
+        # if i == 1:
+        #     data["spikes"] = torch.round(data["spikes"][:, :data['spikes'].shape[1]//4]).type(torch.int8).to(device).numpy()
+        #     data["stimulus"] = data["stimulus"][:data['dilation'].shape[0]//4, :, :, :].type(torch.float32).unsqueeze(0).to(device).squeeze().numpy().reshape(-1, 36, 64)
+        #     data["dilation"] = data["dilation"][:data['dilation'].shape[0]//4].type(torch.float32).to(device).numpy()
+        #     data["d_dilation"] = data["d_dilation"][:data['d_dilation'].shape[0]//4].type(torch.float32).to(device).numpy()
+        #     data["pupil_x"] = data["pupil_x"][:data['pupil_x'].shape[0]//4].type(torch.float32).to(device).numpy()
+        #     data["pupil_y"] = data["pupil_y"][:data['pupil_y'].shape[0]//4].type(torch.float32).to(device).numpy()
+        #     data["treadmill"] = data["treadmill"][:data['treadmill'].shape[0]//4].type(torch.float32).to(device).numpy()
+        #     data["session"] = data["session"]
+        # else:
         data["spikes"] = torch.round(data["spikes"]).type(torch.int8).to(device).numpy()
-        data["stimulus"] = data["stimulus"].type(torch.float32).unsqueeze(0).to(device).squeeze().numpy()
+        data["stimulus"] = data["stimulus"].type(torch.float32).unsqueeze(0).to(device).squeeze().numpy().reshape(-1, 36, 64)
         data["dilation"] = data["dilation"].type(torch.float32).to(device).numpy()
         data["d_dilation"] = data["d_dilation"].type(torch.float32).to(device).numpy()
         data["pupil_x"] = data["pupil_x"].type(torch.float32).to(device).numpy()
@@ -321,6 +332,26 @@ train_dataset = NFCombinedDataset([train_datasets[session] for session in train_
 test_dataset = NFCombinedDataset([test_datasets[session] for session in test_datasets.keys()], block_size=config.training.batch_size, randomized=False)
 finetune_dataset = NFCombinedDataset([finetune_datasets[session] for session in finetune_datasets.keys()], block_size=config.training.batch_size, randomized=False)
 
+# print("Loader>>>>>>>>>>>>>>>>>>")
+# from tqdm import tqdm
+# from torch.utils.data.distributed import DistributedSampler
+# from utils import object_to_dict, save_yaml, all_device
+
+# data = train_dataset
+# loader = DataLoader(data, pin_memory=False,
+#                                 batch_size=config.training.batch_size,
+#                                 num_workers=16, sampler=None)
+
+# pbar = tqdm(enumerate(loader), total=len(loader), disable=False)
+
+# for it, (x, y) in pbar:
+
+#     # place data on the correct device
+#     x = all_device(x, torch.device('cuda', torch.cuda.current_device()))
+#     y = all_device(y, torch.device('cuda', torch.cuda.current_device()))
+
+# asdfasfga
+
 if config.gru_only:
     model_name = "GRU"
 elif config.mlp_only:
@@ -354,7 +385,7 @@ else:
         max_epochs=config.training.epochs,
         batch_size=config.training.batch_size, # This should be equal to the block size
         learning_rate=1e-4,
-        num_workers=16,
+        num_workers=8,
         lr_decay=True,
         patience=3,
         warmup_tokens=8e7,
@@ -371,7 +402,7 @@ else:
         save_every=0,
         eval_every=5,
         min_eval_epoch=50,
-        use_wandb=True,
+        use_wandb=False,
         wandb_project="neuroformer-experanto",
         wandb_group=f"1.5.1_visnav_{args.dataset}",
         wandb_name=args.title,

@@ -6,8 +6,10 @@ training:
 data:
   paths: 
     - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic21067-10-18-Video-512cdd91f251cf74fff81375926f4002_30hz.pkl
+    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic22846-10-16-Video-512cdd91f251cf74fff81375926f4002_30hz.pkl
   scans: 
     - dynamic21067-10-18-Video-512cdd91f251cf74fff81375926f4002_30hz
+    - dynamic22846-10-16-Video-512cdd91f251cf74fff81375926f4002_30hz
 dropout:
   attn: 0.2
   embd: 0.2
