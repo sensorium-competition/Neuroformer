@@ -38,3 +38,5 @@ python -m torch.utils.collect_env
 #nvcc -V
 # python neuroformer_train.py --dataset V1AL --config configs/Visnav/lateral/mconf_pretrain.yaml
 python neuroformer_train_experanto_multisession.py --dataset experanto --config configs/Experanto/mconf_all_30Hz_two.yaml
+# python neuroformer_train_experanto_multisession.py --dataset experanto --config configs/Experanto/mconf_all_30Hz_published-5.yaml
+# python neuroformer_train_experanto_multisession.py --dataset experanto --config configs/Experanto/mconf_all_30Hz_all-12.yaml

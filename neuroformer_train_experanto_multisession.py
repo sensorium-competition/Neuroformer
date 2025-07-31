@@ -2,9 +2,7 @@
 
 import glob
 import os
-
 import sys
-import glob
 from pathlib import Path, PurePath
 
 path = Path.cwd()
@@ -14,43 +12,41 @@ sys.path.append("neuroformer")
 sys.path.append(".")
 sys.path.append("../")
 
-import numpy as np
-import pandas as pd
 import json
-
-import torch
-from torch.utils.data.dataloader import DataLoader
-
 import math
 
+import numpy as np
+import pandas as pd
+import torch
+from neuroformer.data_utils import NFCombinedDataset, NFDataloader, Tokenizer, round_n
+from neuroformer.dataset import build_dataloader
+from neuroformer.datasets import load_experanto, load_V1AL, load_visnav
 from neuroformer.model_neuroformer import Neuroformer, NeuroformerConfig
-from neuroformer.utils import get_attr
 from neuroformer.trainer import Trainer, TrainerConfig
 from neuroformer.utils import (
-    set_seed,
-    update_object,
-    running_jupyter,
     all_device,
-    load_config,
+    create_modalities_dict,
+    dict_to_device,
     dict_to_object,
+    get_attr,
+    load_config,
     object_to_dict,
     recursive_print,
-    dict_to_device,
-    create_modalities_dict,
+    running_jupyter,
+    set_seed,
+    update_object,
 )
 from neuroformer.visualize import set_plot_params
-from neuroformer.data_utils import round_n, Tokenizer, NFDataloader, NFCombinedDataset
-from neuroformer.datasets import load_visnav, load_V1AL, load_experanto
-from neuroformer.dataset import build_dataloader
-from experanto.utils import LongCycler
+from torch.utils.data.dataloader import DataLoader
 from tqdm import tqdm
 
+from experanto.utils import LongCycler
 
 parent_path = os.path.dirname(os.path.dirname(os.getcwd())) + "/"
-import wandb
-
 # set up logging
 import logging
+
+import wandb
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
@@ -83,7 +79,6 @@ else:
 config = load_config(config_path)  # replace 'config.yaml' with your file path
 
 
-
 # %%
 """ 
 
@@ -102,24 +97,39 @@ tokenizers = {}
 for i, data_path in enumerate(config.data.paths):
     if args.dataset in ["lateral", "medial"]:
         device = torch.device("cpu")
-        data, intervals, train_intervals, test_intervals, finetune_intervals, callback = (
-            load_visnav(
-                args.dataset,
-                config,
-                selection=config.selection if hasattr(config, "selection") else None,
-            )
+        (
+            data,
+            intervals,
+            train_intervals,
+            test_intervals,
+            finetune_intervals,
+            callback,
+        ) = load_visnav(
+            args.dataset,
+            config,
+            selection=config.selection if hasattr(config, "selection") else None,
         )
     elif args.dataset == "V1AL":
         device = torch.device("cpu")
-        data, intervals, train_intervals, test_intervals, finetune_intervals, callback = (
-            load_V1AL(config)
-            )
+        (
+            data,
+            intervals,
+            train_intervals,
+            test_intervals,
+            finetune_intervals,
+            callback,
+        ) = load_V1AL(config)
     elif args.dataset == "experanto":
         device = torch.device("cpu")
         # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        data, intervals, train_intervals, test_intervals, finetune_intervals, callback = (
-            load_experanto(config, data_path)
-        )
+        (
+            data,
+            intervals,
+            train_intervals,
+            test_intervals,
+            finetune_intervals,
+            callback,
+        ) = load_experanto(config, data_path)
 
         # if i == 1:
         #     data["spikes"] = torch.round(data["spikes"][:, :data['spikes'].shape[1]//4]).type(torch.int8).to(device).numpy()
@@ -132,14 +142,21 @@ for i, data_path in enumerate(config.data.paths):
         #     data["session"] = data["session"]
         # else:
         data["spikes"] = torch.round(data["spikes"]).type(torch.int8).to(device).numpy()
-        data["stimulus"] = data["stimulus"].type(torch.float32).unsqueeze(0).to(device).squeeze().numpy().reshape(-1, 36, 64)
+        data["stimulus"] = (
+            data["stimulus"]
+            .type(torch.float32)
+            .unsqueeze(0)
+            .to(device)
+            .squeeze()
+            .numpy()
+            .reshape(-1, 36, 64)
+        )
         data["dilation"] = data["dilation"].type(torch.float32).to(device).numpy()
         data["d_dilation"] = data["d_dilation"].type(torch.float32).to(device).numpy()
         data["pupil_x"] = data["pupil_x"].type(torch.float32).to(device).numpy()
         data["pupil_y"] = data["pupil_y"].type(torch.float32).to(device).numpy()
         data["treadmill"] = data["treadmill"].type(torch.float32).to(device).numpy()
         data["session"] = data["session"]
-
 
     # Change the data to experanto data
     # spikes = data['spikes'] # data['spikes'].shape (2023 (neuron), 150578 (activation))
@@ -210,7 +227,6 @@ for i, data_path in enumerate(config.data.paths):
         "dt": config.resolution.dt,
     }
 
-
     def configure_token_types(config, modalities):
         max_window = max(config.window.curr, config.window.prev)
         dt_range = math.ceil(max_window / dt) + 1
@@ -223,7 +239,10 @@ for i, data_path in enumerate(config.data.paths):
                         0,
                         (
                             data["spikes"].shape[0]
-                            if (isinstance(data["spikes"], np.ndarray) or isinstance(data["spikes"], torch.Tensor))
+                            if (
+                                isinstance(data["spikes"], np.ndarray)
+                                or isinstance(data["spikes"], torch.Tensor)
+                            )
                             else data["spikes"][1].shape[0]
                         ),
                     )
@@ -263,7 +282,6 @@ for i, data_path in enumerate(config.data.paths):
             for variable_type, variable in modality.items():
                 print(variable_type, variable)
 
-
     # %%
     print("Train Dataset>>>>>>>>>>>>>>>>>>")
     train_dataset = NFDataloader(
@@ -299,7 +317,6 @@ for i, data_path in enumerate(config.data.paths):
         device=device,
     )
 
-
     print(f"train: {len(train_dataset)}, test: {len(test_dataset)}")
     iterable = iter(train_dataset)
     x, y = next(iterable)
@@ -321,16 +338,38 @@ for i, data_path in enumerate(config.data.paths):
 model = Neuroformer(config, tokenizers).to(device)
 
 # Create a DataLoader
-loader = DataLoader(NFCombinedDataset([test_datasets[session] for session in test_datasets.keys()], block_size=2, randomized=True), batch_size=2, shuffle=False, num_workers=0)
+loader = DataLoader(
+    NFCombinedDataset(
+        [test_datasets[session] for session in test_datasets.keys()],
+        block_size=2,
+        randomized=True,
+    ),
+    batch_size=2,
+    shuffle=False,
+    num_workers=0,
+)
 iterable = iter(loader)
 x, y = next(iterable)
 # dict_to_device(y, device=device)
 recursive_print(y)
 preds, features, loss = model(x, y)
 
-train_dataset = NFCombinedDataset([train_datasets[session] for session in train_datasets.keys()], block_size=config.training.batch_size, randomized=True)
-test_dataset = NFCombinedDataset([test_datasets[session] for session in test_datasets.keys()], block_size=config.training.batch_size, randomized=False)
-finetune_dataset = NFCombinedDataset([finetune_datasets[session] for session in finetune_datasets.keys()], block_size=config.training.batch_size, randomized=False)
+train_dataset = NFCombinedDataset(
+    [train_datasets[session] for session in train_datasets.keys()],
+    block_size=config.training.batch_size,
+    randomized=True,
+    repeat_short=True,
+)
+test_dataset = NFCombinedDataset(
+    [test_datasets[session] for session in test_datasets.keys()],
+    block_size=config.training.batch_size,
+    randomized=False,
+)
+finetune_dataset = NFCombinedDataset(
+    [finetune_datasets[session] for session in finetune_datasets.keys()],
+    block_size=config.training.batch_size,
+    randomized=False,
+)
 
 # print("Loader>>>>>>>>>>>>>>>>>>")
 # from tqdm import tqdm
@@ -383,7 +422,7 @@ else:
     # Create a TrainerConfig and Trainer
     tconf = TrainerConfig(
         max_epochs=config.training.epochs,
-        batch_size=config.training.batch_size, # This should be equal to the block size
+        batch_size=config.training.batch_size,  # This should be equal to the block size
         learning_rate=1e-4,
         num_workers=8,
         lr_decay=True,
@@ -391,8 +430,10 @@ else:
         warmup_tokens=8e7,
         decay_weights=True,
         weight_decay=1.0,
-        shuffle=False, # this shuffle should stay false, because shuffling is done in the dataset and the dataloader should not do shuffling
-        final_tokens=len(train_dataset) * (config.block_size.id) * (config.training.epochs),
+        shuffle=False,  # this shuffle should stay false, because shuffling is done in the dataset and the dataloader should not do shuffling
+        final_tokens=len(train_dataset)
+        * (config.block_size.id)
+        * (config.training.epochs),
         clip_norm=1.0,
         grad_norm_clip=1.0,
         show_grads=False,
@@ -402,10 +443,11 @@ else:
         save_every=0,
         eval_every=5,
         min_eval_epoch=50,
-        use_wandb=False,
+        use_wandb=True,
         wandb_project="neuroformer-experanto",
         wandb_group=f"1.5.1_visnav_{args.dataset}",
         wandb_name=args.title,
+        wandb_entity="ecker-lab",
     )
 
     trainer = Trainer(model, train_dataset, test_dataset, tconf, config)

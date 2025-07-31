@@ -54,8 +54,8 @@ dropout:
 block_size:
   behavior: 15
   frame: 60
-  id: 16
-  prev_id: 32
+  id: 60
+  prev_id: 120
 
 layers:
   state_history: 6
@@ -91,27 +91,27 @@ modalities:
     variables: 
       dilation:
         data: dilation
-        dt: 0.05
+        dt: 2.0
         objective: regression
         predict: true
       d_dilation:
         data: d_dilation
-        dt: 0.05
+        dt: 2.0
         objective: regression
         predict: true
       pupil_x:
         data: pupil_x
-        dt: 0.05
+        dt: 2.0
         objective: regression
         predict: true
       pupil_y:
         data: pupil_y
-        dt: 0.05
+        dt: 2.0
         objective: regression
         predict: true
       treadmill:
         data: treadmill
-        dt: 0.05
+        dt: 2.0
         objective: regression
         predict: true
     window: 2.0

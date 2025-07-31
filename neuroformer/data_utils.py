@@ -1142,39 +1142,43 @@ class NFDataloader(Dataset):
                 y = dict_to_device(y, device=self.device)
 
                 return x, y
-        
+    
 # class NFCombinedDataset(Dataset):
-#     def __init__(self, datasets, block_size=32, randomized=False):
+#     def __init__(self, datasets, block_size=32, randomized=False, repeat_short=False):
 #         self.datasets = datasets
 #         self.block_size = block_size
 #         self.randomized = randomized
         
-#         # Create a list of available indices for each dataset
 #         self.available_indices = [list(range(len(ds))) for ds in datasets]
 #         if self.randomized:
 #             for idx_list in self.available_indices:
-#                 random.shuffle(idx_list)  # shuffle initially if randomized
-        
-#         # Build the final sampling plan
-#         self.plan = []
-#         still_active = [i for i in range(len(datasets)) if len(self.available_indices[i]) > 0]
+#                 random.shuffle(idx_list)
 
-#         while still_active:
-#             for dataset_idx in still_active.copy():  # copy since we'll modify still_active
-#                 idxs = self.available_indices[dataset_idx]
+#         self.plan = []
+#         exhausted = [False] * len(datasets)
+
+#         while not all(exhausted):
+#             for i in range(len(datasets)):
+#                 if exhausted[i]:
+#                     continue
+                
+#                 idxs = self.available_indices[i]
 #                 if not idxs:
-#                     still_active.remove(dataset_idx)
+#                     exhausted[i] = True
 #                     continue
 
-#                 # Take up to block_size elements
+#                 # How many to take in this block
 #                 take = min(self.block_size, len(idxs))
-#                 if self.randomized:
-#                     block_samples = [idxs.pop() for _ in range(take)]
-#                 else:
-#                     block_samples = [idxs.pop(0) for _ in range(take)]  # sequential if not randomized
 
-#                 block = [(dataset_idx, sample_idx) for sample_idx in block_samples]
-#                 self.plan.extend(block)
+#                 if self.randomized:
+#                     block = [idxs.pop() for _ in range(take)]
+#                 else:
+#                     block = [idxs.pop(0) for _ in range(take)]
+
+#                 self.plan.extend([(i, idx) for idx in block])
+
+#                 if not idxs:
+#                     exhausted[i] = True
 
 #     def __len__(self):
 #         return len(self.plan)
@@ -1182,42 +1186,64 @@ class NFDataloader(Dataset):
 #     def __getitem__(self, idx):
 #         dataset_idx, sample_idx = self.plan[idx]
 #         return self.datasets[dataset_idx][sample_idx]
-    
+
+import random
+from torch.utils.data import Dataset
+
 class NFCombinedDataset(Dataset):
-    def __init__(self, datasets, block_size=32, randomized=False):
+    def __init__(self, datasets, block_size=32, randomized=False, repeat_short=False):
         self.datasets = datasets
         self.block_size = block_size
         self.randomized = randomized
-        
-        self.available_indices = [list(range(len(ds))) for ds in datasets]
-        if self.randomized:
-            for idx_list in self.available_indices:
-                random.shuffle(idx_list)
+        self.repeat_short = repeat_short
 
         self.plan = []
+
+        # Lengths of each dataset
+        lengths = [len(ds) for ds in datasets]
+        max_len = max(lengths)
+
+        # Define how many samples we want from each dataset
+        # If repeating, repeat until all match the longest one
+        target_lengths = [
+            (max_len if repeat_short else l)
+            for l in lengths
+        ]
+
+        self.available_indices = [[] for _ in datasets]
+
+        for i, (ds, target_len) in enumerate(zip(datasets, target_lengths)):
+            full_indices = list(range(len(ds)))
+
+            # Repeat the full index list until the target is met
+            repeated = (target_len + len(ds) - 1) // len(ds)  # ceiling division
+            all_idxs = (full_indices * repeated)[:target_len]
+
+            if randomized:
+                random.shuffle(all_idxs)
+
+            self.available_indices[i] = all_idxs
+
+        # Build the plan: interleave blocks from datasets
+        pointers = [0] * len(datasets)
         exhausted = [False] * len(datasets)
 
         while not all(exhausted):
             for i in range(len(datasets)):
                 if exhausted[i]:
                     continue
-                
-                idxs = self.available_indices[i]
-                if not idxs:
+
+                remaining = len(self.available_indices[i]) - pointers[i]
+                if remaining == 0:
                     exhausted[i] = True
                     continue
 
-                # How many to take in this block
-                take = min(self.block_size, len(idxs))
-
-                if self.randomized:
-                    block = [idxs.pop() for _ in range(take)]
-                else:
-                    block = [idxs.pop(0) for _ in range(take)]
-
+                take = min(self.block_size, remaining)
+                block = self.available_indices[i][pointers[i]:pointers[i] + take]
+                pointers[i] += take
                 self.plan.extend([(i, idx) for idx in block])
 
-                if not idxs:
+                if pointers[i] >= len(self.available_indices[i]):
                     exhausted[i] = True
 
     def __len__(self):
