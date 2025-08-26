@@ -424,7 +424,7 @@ else:
         max_epochs=config.training.epochs,
         batch_size=config.training.batch_size,  # This should be equal to the block size
         learning_rate=1e-4,
-        num_workers=8,
+        num_workers=4,
         lr_decay=True,
         patience=3,
         warmup_tokens=8e7,

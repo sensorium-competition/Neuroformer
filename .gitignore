@@ -174,3 +174,4 @@ training/*.ipynb
 **/.history
 
 slurm_files/*
+*.out

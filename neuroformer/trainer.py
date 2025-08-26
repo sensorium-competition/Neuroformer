@@ -260,13 +260,11 @@ class Trainer:
 
             scores = collections.defaultdict(list)
             losses = collections.defaultdict(list)
-            pbar = (
-                tqdm(enumerate(loader), total=len(loader), disable=self.config.no_pbar)
-                if is_train
-                else enumerate(loader)
+            pbar = tqdm(
+                enumerate(loader), total=len(loader), disable=self.config.no_pbar
             )
-            for it, (x, y) in pbar:
 
+            for it, (x, y) in pbar:
                 # place data on the correct device
                 x = all_device(x, self.device)
                 y = all_device(y, self.device)
@@ -417,14 +415,17 @@ class Trainer:
                     raw_model.config.epoch = 1
                 run_epoch("train")
             if self.test_dataset is not None:
-                if epoch > get_attr(self, "min_eval_epoch", 0) and (
+                if epoch >= get_attr(self, "min_eval_epoch", 0) and (
                     epoch % get_attr(self, "eval_every", 1) == 0
                     or epoch == config.max_epochs - 1
                 ):
+                    print(f"Evaluating epoch {epoch}")
                     test_loss, av_losses, scores = run_epoch("test")
                 else:
                     self.save_checkpoint(epoch)
                     continue
+            else:
+                print("No test dataset provided, skipping evaluation")
                 # if config.lr_decay:
                 #     scheduler.step(test_loss)
             if self.config.get_latents:
