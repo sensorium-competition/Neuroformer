@@ -420,6 +420,10 @@ if args.sweep_id is not None:
     wandb.agent(args.sweep_id, function=train_sweep)
 else:
     # Create a TrainerConfig and Trainer
+    print(
+        f"Final_epoch: {len(train_dataset)} * {(config.block_size.id)} * {(config.training.epochs)} = {len(train_dataset) * (config.block_size.id) * (config.training.epochs)}"
+    )
+    total_tokens = len(train_dataset) * (config.block_size.id) * (config.training.epochs)
     tconf = TrainerConfig(
         max_epochs=config.training.epochs,
         batch_size=config.training.batch_size,  # This should be equal to the block size
@@ -427,22 +431,20 @@ else:
         num_workers=4,
         lr_decay=True,
         patience=3,
-        warmup_tokens=8e7,
+        warmup_tokens=int(0.1 * total_tokens),
         decay_weights=True,
         weight_decay=1.0,
         shuffle=False,  # this shuffle should stay false, because shuffling is done in the dataset and the dataloader should not do shuffling
-        final_tokens=len(train_dataset)
-        * (config.block_size.id)
-        * (config.training.epochs),
+        final_tokens=total_tokens,
         clip_norm=1.0,
         grad_norm_clip=1.0,
         show_grads=False,
         ckpt_path=CKPT_PATH,
         no_pbar=False,
         dist=args.dist,
-        save_every=0,
-        eval_every=5,
-        min_eval_epoch=50,
+        save_every=2,
+        eval_every=1,
+        min_eval_epoch=2,
         use_wandb=True,
         wandb_project="neuroformer-experanto",
         wandb_group=f"1.5.1_visnav_{args.dataset}",

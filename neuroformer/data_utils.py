@@ -1462,8 +1462,10 @@ class NFCombinedDataset(Dataset):
 
         # Lengths of each dataset
         lengths = [len(ds) for ds in datasets]
+        # make lengths divide by block_size
+        lengths = [l - (l % block_size) for l in lengths]
         max_len = max(lengths)
-        max_len = max_len + (self.block_size - (max_len % self.block_size))
+        max_len = max_len - (max_len % self.block_size)
 
         # Define how many samples we want from each dataset
         # If repeating, repeat until all match the longest one
@@ -1504,6 +1506,8 @@ class NFCombinedDataset(Dataset):
 
                 if pointers[i] >= len(self.available_indices[i]):
                     exhausted[i] = True
+
+        print("Dataset combined plan length:", len(self.plan))
 
     def __len__(self):
         return len(self.plan)

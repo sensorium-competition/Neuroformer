@@ -2,50 +2,55 @@
 
 import glob
 import os
-
 import sys
-import glob
 from pathlib import Path, PurePath
+
 path = Path.cwd()
 parent_path = path.parents[1]
-sys.path.append(str(PurePath(parent_path, 'neuroformer')))
-sys.path.append('neuroformer')
-sys.path.append('.')
-sys.path.append('../')
-
-import numpy as np
-import pandas as pd
-
-import torch
-from torch.utils.data.dataloader import DataLoader
+sys.path.append(str(PurePath(parent_path, "neuroformer")))
+sys.path.append("neuroformer")
+sys.path.append(".")
+sys.path.append("../")
 
 import math
 
+import numpy as np
+import pandas as pd
+import torch
+from neuroformer.data_utils import NFDataloader, Tokenizer, round_n
+from neuroformer.datasets import load_V1AL, load_visnav
 from neuroformer.model_neuroformer import Neuroformer, NeuroformerConfig
-from neuroformer.utils import get_attr
 from neuroformer.trainer import Trainer, TrainerConfig
-from neuroformer.utils import (set_seed, update_object, running_jupyter, 
-                                 all_device, load_config, 
-                                 dict_to_object, object_to_dict, recursive_print,
-                                 create_modalities_dict)
+from neuroformer.utils import (
+    all_device,
+    create_modalities_dict,
+    dict_to_object,
+    get_attr,
+    load_config,
+    object_to_dict,
+    recursive_print,
+    running_jupyter,
+    set_seed,
+    update_object,
+)
 from neuroformer.visualize import set_plot_params
-from neuroformer.data_utils import round_n, Tokenizer, NFDataloader
-from neuroformer.datasets import load_visnav, load_V1AL
+from torch.utils.data.dataloader import DataLoader
 
 parent_path = os.path.dirname(os.path.dirname(os.getcwd())) + "/"
-import wandb
-
 # set up logging
 import logging
+
+import wandb
+
 logging.basicConfig(
-        format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
-        datefmt="%m/%d/%Y %H:%M:%S",
-        level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+    level=logging.INFO,
 )
 
 from neuroformer.default_args import DefaultArgs, parse_args
 
-if running_jupyter(): # or __name__ == "__main__":
+if running_jupyter():  # or __name__ == "__main__":
     print("Running in Jupyter")
     args = DefaultArgs()
 else:
@@ -80,18 +85,21 @@ DOWNLOAD DATA URL = https://drive.google.com/drive/folders/1jNvA4f-epdpRmeG9s2E-
 """
 
 if args.dataset in ["lateral", "medial"]:
-    data, intervals, train_intervals, \
-    test_intervals, finetune_intervals, \
-    callback = load_visnav(args.dataset, config, 
-                           selection=config.selection if hasattr(config, "selection") else None)
+    data, intervals, train_intervals, test_intervals, finetune_intervals, callback = (
+        load_visnav(
+            args.dataset,
+            config,
+            selection=config.selection if hasattr(config, "selection") else None,
+        )
+    )
 elif args.dataset == "V1AL":
-    data, intervals, train_intervals, \
-    test_intervals, finetune_intervals, \
-    callback = load_V1AL(config)
+    data, intervals, train_intervals, test_intervals, finetune_intervals, callback = (
+        load_V1AL(config)
+    )
 
 # Change the data to experanto data
-spikes = data['spikes'] # data['spikes'].shape (2023 (neuron), 150578 (activation))
-stimulus = data['stimulus'] # data['stimulus'].shape (30117 (frame), 30 (H), 100 (W))
+spikes = data["spikes"]  # data['spikes'].shape (2023 (neuron), 150578 (activation))
+stimulus = data["stimulus"]  # data['stimulus'].shape (30117 (frame), 30 (H), 100 (W))
 
 # %%
 window = config.window.curr
@@ -101,8 +109,8 @@ dt = config.resolution.dt
 # -------- #
 
 spikes_dict = {
-    "ID": data['spikes'],
-    "Frames": data['stimulus'],
+    "ID": data["spikes"],
+    "Frames": data["stimulus"],
     "Interval": intervals,
     "dt": config.resolution.dt,
     "id_block_size": config.block_size.id,
@@ -151,7 +159,12 @@ Modalities: any additional modalities other than spikes and frames
 
 """
 
-frames = {'feats': stimulus, 'callback': callback, 'window': config.window.frame, 'dt': config.resolution.dt}
+frames = {
+    "feats": stimulus,
+    "callback": callback,
+    "window": config.window.frame,
+    "dt": config.resolution.dt,
+}
 
 
 def configure_token_types(config, modalities):
@@ -160,23 +173,44 @@ def configure_token_types(config, modalities):
     n_dt = [round_n(x, dt) for x in np.arange(0, max_window + dt, dt)]
 
     token_types = {
-        'ID': {'tokens': list(np.arange(0, data['spikes'].shape[0] if isinstance(data['spikes'], np.ndarray) \
-                                    else data['spikes'][1].shape[0]))},
-        'dt': {'tokens': n_dt, 'resolution': dt},
-        **({
-            modality: {
-                'tokens': sorted(list(set(eval(modality)))),
-                'resolution': details.get('resolution')
+        "ID": {
+            "tokens": list(
+                np.arange(
+                    0,
+                    (
+                        data["spikes"].shape[0]
+                        if isinstance(data["spikes"], np.ndarray)
+                        else data["spikes"][1].shape[0]
+                    ),
+                )
+            )
+        },
+        "dt": {"tokens": n_dt, "resolution": dt},
+        **(
+            {
+                modality: {
+                    "tokens": sorted(list(set(eval(modality)))),
+                    "resolution": details.get("resolution"),
+                }
+                # if we have to classify the modality,
+                # then we need to tokenize it
+                for modality, details in modalities.items()
+                if config.modalities is not None
+                if details.get("predict", False)
+                and details.get("objective", "") == "classification"
             }
-            # if we have to classify the modality, 
-            # then we need to tokenize it
-            for modality, details in modalities.items() if config.modalities is not None
-            if details.get('predict', False) and details.get('objective', '') == 'classification'
-        } if modalities is not None else {})
+            if modalities is not None
+            else {}
+        ),
     }
     return token_types
 
-modalities = create_modalities_dict(data, config.modalities) if get_attr(config, 'modalities', None) else None
+
+modalities = (
+    create_modalities_dict(data, config.modalities)
+    if get_attr(config, "modalities", None)
+    else None
+)
 token_types = configure_token_types(config, modalities)
 tokenizer = Tokenizer(token_types)
 
@@ -189,19 +223,40 @@ if modalities is not None:
 
 
 # %%
-train_dataset = NFDataloader(spikes_dict, tokenizer, config, dataset=args.dataset, 
-                             frames=frames, intervals=train_intervals, modalities=modalities)
-test_dataset = NFDataloader(spikes_dict, tokenizer, config, dataset=args.dataset, 
-                            frames=frames, intervals=test_intervals, modalities=modalities)
-finetune_dataset = NFDataloader(spikes_dict, tokenizer, config, dataset=args.dataset, 
-                                frames=frames, intervals=finetune_intervals, modalities=modalities)
+train_dataset = NFDataloader(
+    spikes_dict,
+    tokenizer,
+    config,
+    dataset=args.dataset,
+    frames=frames,
+    intervals=train_intervals,
+    modalities=modalities,
+)
+test_dataset = NFDataloader(
+    spikes_dict,
+    tokenizer,
+    config,
+    dataset=args.dataset,
+    frames=frames,
+    intervals=test_intervals,
+    modalities=modalities,
+)
+finetune_dataset = NFDataloader(
+    spikes_dict,
+    tokenizer,
+    config,
+    dataset=args.dataset,
+    frames=frames,
+    intervals=finetune_intervals,
+    modalities=modalities,
+)
 
-    
-print(f'train: {len(train_dataset)}, test: {len(test_dataset)}')
+
+print(f"train: {len(train_dataset)}, test: {len(test_dataset)}")
 iterable = iter(train_dataset)
 x, y = next(iterable)
-print(x['id'])
-print(x['dt'])
+print(x["id"])
+print(x["dt"])
 recursive_print(x)
 
 # Update the config
@@ -239,26 +294,45 @@ if os.path.exists(CKPT_PATH):
         counter += 1
 
 if args.resume is not None:
-    model.load_state_dict(torch.load(args.resume),
-                           strict=False)
+    model.load_state_dict(torch.load(args.resume), strict=False)
 
 if args.sweep_id is not None:
     # this is for hyperparameter sweeps
     from neuroformer.hparam_sweep import train_sweep
+
     print(f"-- SWEEP_ID -- {args.sweep_id}")
     wandb.agent(args.sweep_id, function=train_sweep)
 else:
     # Create a TrainerConfig and Trainer
-    tconf = TrainerConfig(max_epochs=MAX_EPOCHS, batch_size=BATCH_SIZE, learning_rate=1e-4, 
-                          num_workers=16, lr_decay=True, patience=3, warmup_tokens=8e7, 
-                          decay_weights=True, weight_decay=1.0, shuffle=SHUFFLE,
-                          final_tokens=len(train_dataset)*(config.block_size.id) * (MAX_EPOCHS),
-                          clip_norm=1.0, grad_norm_clip=1.0,
-                          show_grads=False,
-                          ckpt_path=CKPT_PATH, no_pbar=False, 
-                          dist=args.dist, save_every=0, eval_every=5, min_eval_epoch=50,
-                          use_wandb=False, wandb_project="neuroformer", 
-                          wandb_group=f"1.5.1_visnav_{args.dataset}", wandb_name=args.title)
+    print(
+        f"Final_epoch: {len(train_dataset)} * {(config.block_size.id)} * {(config.training.epochs)} = {len(train_dataset) * (config.block_size.id) * (config.training.epochs)}"
+    )
+    tconf = TrainerConfig(
+        max_epochs=MAX_EPOCHS,
+        batch_size=BATCH_SIZE,
+        learning_rate=1e-4,
+        num_workers=16,
+        lr_decay=True,
+        patience=3,
+        warmup_tokens=8e7,
+        decay_weights=True,
+        weight_decay=1.0,
+        shuffle=SHUFFLE,
+        final_tokens=len(train_dataset) * (config.block_size.id) * (MAX_EPOCHS),
+        clip_norm=1.0,
+        grad_norm_clip=1.0,
+        show_grads=False,
+        ckpt_path=CKPT_PATH,
+        no_pbar=False,
+        dist=args.dist,
+        save_every=0,
+        eval_every=5,
+        min_eval_epoch=50,
+        use_wandb=False,
+        wandb_project="neuroformer",
+        wandb_group=f"1.5.1_visnav_{args.dataset}",
+        wandb_name=args.title,
+    )
 
     trainer = Trainer(model, train_dataset, test_dataset, tconf, config)
     trainer.train()

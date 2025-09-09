@@ -89,6 +89,10 @@ class TrainerConfig:
 class Trainer:
 
     def __init__(self, model, train_dataset, test_dataset, config, mconf=None):
+        print(">>>>>>>>>>>>>>>>>>>>>>Trainer config:")
+        print(config)
+        print(">>>>>>>>>>>>>>>>>>>>>>Model config:")
+        print(mconf)
         self.model = model
         self.criterion = torch.nn.CrossEntropyLoss()
         self.mconf = mconf if mconf is not None else self.model.config
