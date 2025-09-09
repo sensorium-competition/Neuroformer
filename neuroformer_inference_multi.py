@@ -10,17 +10,21 @@ parent_path = path.parents[1]
 sys.path.append(str(PurePath(parent_path, "neuroformer")))
 sys.path.append("neuroformer")
 
+import math
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-from neuroformer.datasets import load_V1AL, load_visnav
+from neuroformer.data_utils import NFCombinedDataset, NFDataloader, Tokenizer, round_n
+from neuroformer.datasets import load_experanto
 from neuroformer.model_neuroformer import load_model_and_tokenizer
 from neuroformer.simulation import decode_modality, generate_spikes
 from neuroformer.utils import (
     all_device,
     create_modalities_dict,
     get_attr,
+    load_config,
     recursive_print,
     running_jupyter,
     set_seed,
@@ -44,16 +48,14 @@ from neuroformer.default_args import DefaultArgs, parse_args
 if running_jupyter():  # or __name__ == "__main__":
     print("Running in Jupyter")
     args = DefaultArgs()
-    # args.dataset = "medial"
-    # args.ckpt_path = "./models/NF.15/Visnav_VR_Expt/medial/Neuroformer/predict_all_behavior/(state_history=6,_state=6,_stimulus=6,_behavior=6,_self_att=6,_modalities=(n_behavior=25))/25"
-
-    args.dataset = "lateral"
-    args.ckpt_path = "./models/predict_all_behavior/(state_history=6,_state=6,_stimulus=6,_behavior=6,_self_att=6,_modalities=(n_behavior=25))/25"
+    # Using a config file that specifies multiple data paths
+    args.config = "./configs/Experanto/mconf_all_30Hz_two.yaml"
+    args.dataset = "experanto"
+    args.ckpt_path = "./models/NF.15/Visnav_VR_Expt/lateral/Neuroformer/predict_all/(state_history=6,_state=6,_stimulus=6,_behavior=6,_self_att=6,_modalities=(n_behavior=25))/25"
     args.predict_modes = ["speed", "phi", "th"]
 else:
     print("Running in terminal")
     args = parse_args()
-
 
 # SET SEED - VERY IMPORTANT
 set_seed(args.seed)
@@ -63,127 +65,87 @@ print(f"VISUAL: {args.visual}")
 print(f"PAST_STATE: {args.past_state}")
 
 
-config, tokenizer, model = load_model_and_tokenizer(args.ckpt_path)
+config = load_config(args.config)
+config, tokenizers, model = load_model_and_tokenizer(args.ckpt_path)
+
 
 # %%
 """ 
 
 -- DATA --
-neuroformer/data/OneCombo3_V1AL/
-df = response
-video_stack = stimulus
-DOWNLOAD DATA URL = https://drive.google.com/drive/folders/1jNvA4f-epdpRmeG9s2E-2Sfo-pwYbjeY?usp=sharing
-
+Loading multi-session experanto data.
 
 """
-print(f"DATASET: {args.dataset}")
-if args.dataset in ["lateral", "medial"]:
+
+test_datasets = {}
+for i, data_path in enumerate(config.data.paths):
     data, intervals, train_intervals, test_intervals, finetune_intervals, callback = (
-        load_visnav(
-            args.dataset,
-            config,
-            selection=config.selection if hasattr(config, "selection") else None,
-        )
+        load_experanto(config, data_path)
     )
-elif args.dataset == "V1AL":
-    data, intervals, train_intervals, test_intervals, finetune_intervals, callback = (
-        load_V1AL(config)
+    # This part is added to handle the structure of the experanto data
+    data["spikes"] = torch.round(data["spikes"]).type(torch.int8).numpy()
+    data["stimulus"] = (
+        data["stimulus"]
+        .type(torch.float32)
+        .unsqueeze(0)
+        .squeeze()
+        .numpy()
+        .reshape(-1, 36, 64)
+    )
+    data["dilation"] = data["dilation"].type(torch.float32).numpy()
+    data["d_dilation"] = data["d_dilation"].type(torch.float32).numpy()
+    data["pupil_x"] = data["pupil_x"].type(torch.float32).numpy()
+    data["pupil_y"] = data["pupil_y"].type(torch.float32).numpy()
+    data["treadmill"] = data["treadmill"].type(torch.float32).numpy()
+    data["session"] = data["session"]
+
+    spikes_dict = {
+        "ID": data["spikes"],
+        "Frames": data["stimulus"],
+        "Interval": intervals,
+        "dt": config.resolution.dt,
+        "id_block_size": config.block_size.id,
+        "prev_id_block_size": config.block_size.prev_id,
+        "frame_block_size": config.block_size.frame,
+        "window": config.window.curr,
+        "window_prev": config.window.prev,
+        "frame_window": config.window.frame,
+        "session": data["session"],
+    }
+
+    frames = {
+        "feats": data["stimulus"],
+        "callback": callback,
+        "window": config.window.frame,
+        "dt": config.resolution.dt,
+    }
+    modalities = (
+        create_modalities_dict(data, config.modalities)
+        if get_attr(config, "modalities", None)
+        else None
     )
 
-spikes = data["spikes"]
-stimulus = data["stimulus"]
+    test_datasets[data["session"]] = NFDataloader(
+        spikes_dict,
+        tokenizers[data["session"]],
+        config,
+        dataset=args.dataset,
+        frames=frames,
+        intervals=test_intervals,
+        modalities=modalities,
+    )
 
-# %%
-window = config.window.curr
-window_prev = config.window.prev
-dt = config.resolution.dt
-
-
-# -------- #
-
-spikes_dict = {
-    "ID": data["spikes"],
-    "Frames": data["stimulus"],
-    "Interval": intervals,
-    "dt": config.resolution.dt,
-    "id_block_size": config.block_size.id,
-    "prev_id_block_size": config.block_size.prev_id,
-    "frame_block_size": config.block_size.frame,
-    "window": config.window.curr,
-    "window_prev": config.window.prev,
-    "frame_window": config.window.frame,
-}
-
-""" structure:
-{
-    type_of_modality:
-        {name of modality: {'data':data, 'dt': dt, 'predict': True/False},
-        ...
-        }
-    ...
-}
-"""
-
-
-# %%
-from neuroformer.data_utils import NFDataloader
-
-modalities = create_modalities_dict(data, config.modalities)
-frames = {
-    "feats": stimulus,
-    "callback": callback,
-    "window": config.window.frame,
-    "dt": config.resolution.dt,
-}
-
-train_dataset = NFDataloader(
-    spikes_dict,
-    tokenizer,
-    config,
-    dataset=args.dataset,
-    frames=frames,
-    intervals=train_intervals,
-    modalities=modalities,
+# Combine datasets
+test_dataset = NFCombinedDataset(
+    [test_datasets[session] for session in test_datasets.keys()],
+    block_size=1,  # Generate spikes one by one
+    randomized=False,
 )
-test_dataset = NFDataloader(
-    spikes_dict,
-    tokenizer,
-    config,
-    dataset=args.dataset,
-    frames=frames,
-    intervals=test_intervals,
-    modalities=modalities,
-)
-finetune_dataset = NFDataloader(
-    spikes_dict,
-    tokenizer,
-    config,
-    dataset=args.dataset,
-    frames=frames,
-    intervals=finetune_intervals,
-    modalities=modalities,
-)
-
-
-# print(f'train: {len(train_dataset)}, test: {len(test_dataset)}')
-iterable = iter(train_dataset)
-x, y = next(iterable)
-recursive_print(x)
-
-# Update the config
-config.id_vocab_size = tokenizer.ID_vocab_size
-
-# Create a DataLoader
-loader = DataLoader(test_dataset, batch_size=2, shuffle=True, num_workers=0)
-iterable = iter(loader)
-x, y = next(iterable)
-recursive_print(y)
-preds, features, loss = model(x, y)
 
 # Set training parameters
-MAX_EPOCHS = 300
-BATCH_SIZE = 32 * 5
-SHUFFLE = True
+MAX_EPOCHS = 250
+BATCH_SIZE = 1  # Set batch size to 1 for inference
+SHUFFLE = False
 
 if config.gru_only:
     model_name = "GRU"
@@ -209,14 +171,12 @@ gpu = True
 pred_dt = True
 
 # Run the prediction function
-# let's just run this on the finetune dataset
-# just so it takes less time.
 results_trial = generate_spikes(
     model,
-    finetune_dataset,
-    window,
-    window_prev,
-    tokenizer,
+    test_dataset,
+    config.window.curr,
+    config.window.prev,
+    tokenizers,
     sample=sample,
     top_p=top_p,
     top_p_t=top_p_t,

@@ -1,6 +1,6 @@
 training:
-  batch_size: 16
-  epochs: 75
+  batch_size: 8
+  epochs: 50
   shuffle: True
 
 data:

@@ -1457,6 +1457,19 @@ class NFCombinedDataset(Dataset):
         self.block_size = block_size
         self.randomized = randomized
         self.repeat_short = repeat_short
+        # Assuming all datasets share the same relevant properties for these methods
+        # This is a strong assumption, but necessary for the methods to be part of this class
+        # A better design might be to pass the dataset index to these methods
+        first_dataset = self.datasets[0]
+        self.window = first_dataset.window
+        self.dt = first_dataset.dt
+        self.window_prev = first_dataset.window_prev
+        self.tokenizer = first_dataset.tokenizer
+        self.stoi = first_dataset.stoi
+        self.itos_dt = first_dataset.itos_dt
+
+        # Create a session to dataset index mapping for efficient lookups in get_interval
+        self.session_to_idx = {ds.session: i for i, ds in enumerate(self.datasets)}
 
         self.plan = []
 
@@ -1515,6 +1528,52 @@ class NFCombinedDataset(Dataset):
     def __getitem__(self, idx):
         dataset_idx, sample_idx = self.plan[idx]
         return self.datasets[dataset_idx][sample_idx]
+
+    def calc_intervals(self, interval):
+        """
+        Calculates previous and current intervals for spike data processing.
+        This method assumes that window, dt, and window_prev are consistent across all combined datasets.
+        """
+        prev_int = round_n(interval - self.window, self.dt)
+        prev_id_interval = round_n(prev_int - self.window_prev, self.dt), prev_int
+        current_id_interval = prev_int, round_n(prev_int + self.window, self.dt)
+        assert prev_id_interval[1] == current_id_interval[0]
+        return prev_id_interval, current_id_interval
+
+    def get_interval(
+        self,
+        session,
+        interval,
+        trial,
+        block_size,
+        data=None,
+        data_dict=None,
+        n_stim=None,
+        pad=True,
+    ):
+        """
+        Retrieves spike and timing data for a specific interval, trial, and session.
+        This method delegates the call to the appropriate underlying dataset based on the session.
+        """
+        if session not in self.session_to_idx:
+            raise ValueError(f"Session '{session}' not found in the combined dataset.")
+        dataset_idx = self.session_to_idx[session]
+        target_dataset = self.datasets[dataset_idx]
+
+        # Override the dataset's data if provided
+        if data is not None:
+            original_data = target_dataset.data
+            target_dataset.data = data
+
+        result = target_dataset.get_interval(
+            interval, trial, block_size, data_dict=data_dict, n_stim=n_stim, pad=pad
+        )
+
+        # Restore original data if it was overridden
+        if data is not None:
+            target_dataset.data = original_data
+
+        return result
 
 
 def combo3_V1AL_callback(frames, frame_idx, n_frames, **kwargs):

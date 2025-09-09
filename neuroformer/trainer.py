@@ -176,7 +176,7 @@ class Trainer:
         save_yaml(tconf, os.path.join(self.config.ckpt_path, "tconf.yaml"))
         # save_yaml(dconf, os.path.join(self.config.ckpt_path, "dconf.yaml"))
 
-        if hasattr(raw_model, "tokenizer"):
+        if hasattr(raw_model, "tokenizer") or hasattr(raw_model, "tokenizers"):
             with open(os.path.join(self.config.ckpt_path, "tokenizer.pkl"), "wb") as f:
                 pickle.dump(raw_model.tokenizer, f)
 
