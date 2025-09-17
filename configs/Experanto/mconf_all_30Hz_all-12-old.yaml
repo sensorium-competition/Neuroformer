@@ -12,7 +12,7 @@ data:
     - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29228-2-10-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
     - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic26872-17-20-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
     - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic27204-5-13-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
-    # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic17797-8-5-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
+    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic17797-8-5-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
     # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29156-11-10-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
     # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29228-2-10-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
     # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29234-6-9-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
@@ -34,7 +34,7 @@ data:
     - dynamic29228-2-10-Video-021a75e56847d574b9acbcc06c675055_30hz
     - dynamic26872-17-20-Video-021a75e56847d574b9acbcc06c675055_30hz
     - dynamic27204-5-13-Video-021a75e56847d574b9acbcc06c675055_30hz
-    # - dynamic17797-8-5-Video-021a75e56847d574b9acbcc06c675055_30hz
+    - dynamic17797-8-5-Video-021a75e56847d574b9acbcc06c675055_30hz
 
 dropout:
   attn: 0.2
@@ -73,43 +73,43 @@ window:
   frame: 2.0
   curr: 2.0
   prev: 4.0
-  treadmill: 2.0  # Adding this allows for loss being calculated for all modalities and adds modalities to the target
-  dillation: 2.0
-  d_dilation: 2.0
-  pupil_x: 2.0
-  pupil_y: 2.0
+#   treadmill: 2.0  # Adding this allows for loss being calculated for all modalities and adds modalities to the target
+#   dillation: 2.0
+#   d_dilation: 2.0
+#   pupil_x: 2.0
+#   pupil_y: 2.0
 
-# modality-specific parameters
-modalities:
-  behavior:
-    n_layers: 4
-    variables: 
-      dilation:
-        data: dilation
-        dt: 2.0
-        objective: regression
-        predict: true
-      d_dilation:
-        data: d_dilation
-        dt: 2.0
-        objective: regression
-        predict: true
-      pupil_x:
-        data: pupil_x
-        dt: 2.0
-        objective: regression
-        predict: true
-      pupil_y:
-        data: pupil_y
-        dt: 2.0
-        objective: regression
-        predict: true
-      treadmill:
-        data: treadmill
-        dt: 2.0
-        objective: regression
-        predict: true
-    window: 2.0
+# # modality-specific parameters
+# modalities:
+#   behavior:
+#     n_layers: 4
+#     variables: 
+#       dilation:
+#         data: dilation
+#         dt: 2.0
+#         objective: regression
+#         predict: true
+#       d_dilation:
+#         data: d_dilation
+#         dt: 2.0
+#         objective: regression
+#         predict: true
+#       pupil_x:
+#         data: pupil_x
+#         dt: 2.0
+#         objective: regression
+#         predict: true
+#       pupil_y:
+#         data: pupil_y
+#         dt: 2.0
+#         objective: regression
+#         predict: true
+#       treadmill:
+#         data: treadmill
+#         dt: 2.0
+#         objective: regression
+#         predict: true
+#     window: 2.0
 
 predict: null
 

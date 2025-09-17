@@ -400,7 +400,7 @@ elif config.gru2_only:
 else:
     model_name = "Neuroformer"
 
-CKPT_PATH = f"./models/NF.15/Visnav_VR_Expt/{args.dataset}/{model_name}/{args.title}/{str(config.layers)}/{args.seed}"
+CKPT_PATH = f"./models/NF.15/Visnav_VR_Expt/{args.dataset}/{model_name}/{args.title}/train_8/{str(config.layers)}/{args.seed}"
 CKPT_PATH = CKPT_PATH.replace("namespace", "").replace(" ", "_")
 
 if os.path.exists(CKPT_PATH):
@@ -423,7 +423,9 @@ else:
     print(
         f"Final_epoch: {len(train_dataset)} * {(config.block_size.id)} * {(config.training.epochs)} = {len(train_dataset) * (config.block_size.id) * (config.training.epochs)}"
     )
-    total_tokens = len(train_dataset) * (config.block_size.id) * (config.training.epochs)
+    total_tokens = (
+        len(train_dataset) * (config.block_size.id) * (config.training.epochs)
+    )
     tconf = TrainerConfig(
         max_epochs=config.training.epochs,
         batch_size=config.training.batch_size,  # This should be equal to the block size
@@ -442,7 +444,7 @@ else:
         ckpt_path=CKPT_PATH,
         no_pbar=False,
         dist=args.dist,
-        save_every=2,
+        save_every=100,
         eval_every=1,
         min_eval_epoch=2,
         use_wandb=True,

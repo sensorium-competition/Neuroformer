@@ -407,7 +407,7 @@ def group_intervals(df, dt):
 
 
 def split_idx(df, block_size):
-    """assign indexer to intervals for DataLoader class"""
+    """assign indexer to DataLoader class"""
     new_row = []
     current_i = -1
     seq_l = 0
@@ -1156,6 +1156,34 @@ class NFDataloader(Dataset):
                     ][-(block_size - 2) :]
                     if n_stim is not None:
                         data = data[data["Stimulus"] == n_stim]
+            chunk = data["ID"][-(block_size - 2) :].tolist()
+            dix = self.tokenizer.encode(chunk, "ID")
+            # trial_token = self.stoi['Trial ' + str(int(trial))]
+            dix = ([self.stoi["SOS"]] + dix + [self.stoi["EOS"]])[-block_size:]
+            # dix = ([trial_token] + dix + [self.stoi['EOS']])[-block_size:]
+            pad_n = (
+                block_size - (len(dix) + 1 - 2) if pad else 0
+            )  # len chunk is 1 unit bigger than x, y
+            dix = dix + [self.stoi["PAD"]] * pad_n
+
+            # print(data['Time'], "int", interval[0])
+            dt_chunk = (
+                (data["Time"] - (interval[0])) if interval[0] > 0 else data["Time"]
+            )
+            dt_chunk = list(self.tokenizer.encode(dt_chunk.tolist(), "dt"))
+
+            if "EOS" in self.stoi_dt.keys():
+                eos_token = self.stoi_dt["EOS"]
+            else:
+                eos_token = max(self.stoi_dt.values())
+
+            dt_chunk = ([0] + dt_chunk + [eos_token])[-block_size:]
+            dt_chunk = dt_chunk + [self.stoi_dt["PAD"]] * pad_n
+            # else:
+            #     dt_chunk = [0] + max(self.stoi_dt.values()) * pad_n
+
+            return dix, dt_chunk, pad_n
+
         elif isinstance(data, dict):
             # array = spikes per: (Neuron, Interval)
             # if trial is not None:

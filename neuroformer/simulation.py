@@ -194,7 +194,11 @@ def generate_spikes(
         if isinstance(model, list)
         else model.eval()
     )
-    # stoi, itos, itos_dt = tokenizer.stoi['ID'], tokenizer.itos['ID'], tokenizer.itos['dt']
+    stoi, itos, itos_dt = (
+        tokenizer.stoi["ID"],
+        tokenizer.itos["ID"],
+        tokenizer.itos["dt"],
+    )
     tf = 0
     mconf = model[0].config if isinstance(model, list) else model.config
     T_id = mconf.block_size.id
@@ -212,11 +216,6 @@ def generate_spikes(
     loader = DataLoader(dataset, shuffle=False, pin_memory=False)
     pbar = tqdm(enumerate(loader), total=len(loader), disable=p_bar)
     for it, (x, y) in pbar:
-        stoi, itos, itos_dt = (
-            tokenizer[x["session"][0]].stoi["ID"],
-            tokenizer[x["session"][0]].itos["ID"],
-            tokenizer[x["session"][0]].itos["dt"],
-        )
         xid_prev_real = x["id_prev"].flatten()
         pad_real = x["pad_prev"].flatten() - 2
 
@@ -249,18 +248,9 @@ def generate_spikes(
                 prev_id_interval, current_id_interval = dataset.calc_intervals(
                     x["interval"]
                 )
-                if "session" in x:
-                    x["id_prev"], x["dt_prev"], pad_prev = dataset.get_interval(
-                        x["session"][0],
-                        prev_id_interval,
-                        float(x["trial"]),
-                        T_id_prev,
-                        data=df,
-                    )
-                else:
-                    x["id_prev"], x["dt_prev"], pad_prev = dataset.get_interval(
-                        prev_id_interval, float(x["trial"]), T_id_prev, data=df
-                    )
+                x["id_prev"], x["dt_prev"], pad_prev = dataset.get_interval(
+                    prev_id_interval, float(x["trial"]), T_id_prev, data=df
+                )
                 x["id_prev"] = (
                     torch.tensor(x["id_prev"][:-1], dtype=x["id"].dtype)
                     .unsqueeze(0)

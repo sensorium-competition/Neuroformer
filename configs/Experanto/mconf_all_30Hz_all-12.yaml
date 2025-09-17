@@ -1,35 +1,40 @@
 training:
   batch_size: 8
-  epochs: 10
+  epochs: 15
   shuffle: True
 
 data:
   paths:  
-    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29156-11-10-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
-    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29228-2-10-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
-    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29234-6-9-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
-    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29513-3-5-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
-    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29514-2-9-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
-    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29623-4-9-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
-    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29755-2-8-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
-    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29647-19-8-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
-    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29515-10-12-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
-    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29712-5-9-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
+    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30hz_05beh/dynamic29234-6-9-Video-021a75e56847d574b9acbcc06c675055_30hz_new.pkl
+    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30hz_05beh/dynamic29514-2-9-Video-021a75e56847d574b9acbcc06c675055_30hz_new.pkl
+    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30hz_05beh/dynamic29513-3-5-Video-021a75e56847d574b9acbcc06c675055_30hz_new.pkl
+    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30hz_05beh/dynamic29156-11-10-Video-021a75e56847d574b9acbcc06c675055_30hz_new.pkl
+    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30hz_05beh/dynamic29228-2-10-Video-021a75e56847d574b9acbcc06c675055_30hz_new.pkl
+    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30hz_05beh/dynamic26872-17-20-Video-021a75e56847d574b9acbcc06c675055_30hz_new.pkl
+    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30hz_05beh/dynamic27204-5-13-Video-021a75e56847d574b9acbcc06c675055_30hz_new.pkl
+    - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30hz_05beh/dynamic17797-8-5-Video-021a75e56847d574b9acbcc06c675055_30hz_new.pkl
+    # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29156-11-10-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
+    # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29228-2-10-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
+    # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29234-6-9-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
+    # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29513-3-5-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
+    # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29514-2-9-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
+    # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29623-4-9-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
+    # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29755-2-8-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
+    # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29647-19-8-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
+    # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29515-10-12-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
+    # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic29712-5-9-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
     # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic26872-17-20-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
     # - /mnt/vast-react/projects/neural_foundation_model/Neuroformer_data_format/30Hz/dynamic27204-5-13-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl
+
   scans: 
+    - dynamic29234-6-9-Video-021a75e56847d574b9acbcc06c675055_30hz
+    - dynamic29514-2-9-Video-021a75e56847d574b9acbcc06c675055_30hz
+    - dynamic29513-3-5-Video-021a75e56847d574b9acbcc06c675055_30hz
     - dynamic29156-11-10-Video-021a75e56847d574b9acbcc06c675055_30hz
     - dynamic29228-2-10-Video-021a75e56847d574b9acbcc06c675055_30hz
-    - dynamic29234-6-9-Video-021a75e56847d574b9acbcc06c675055_30hz
-    - dynamic29513-3-5-Video-021a75e56847d574b9acbcc06c675055_30hz
-    - dynamic29514-2-9-Video-021a75e56847d574b9acbcc06c675055_30hz
-    - dynamic29623-4-9-Video-021a75e56847d574b9acbcc06c675055_30hz
-    - dynamic29755-2-8-Video-021a75e56847d574b9acbcc06c675055_30hz
-    - dynamic29647-19-8-Video-021a75e56847d574b9acbcc06c675055_30hz
-    - dynamic29515-10-12-Video-021a75e56847d574b9acbcc06c675055_30hz
-    - dynamic29712-5-9-Video-021a75e56847d574b9acbcc06c675055_30hz
-    # - dynamic26872-17-20-Video-021a75e56847d574b9acbcc06c675055_30hz
-    # - dynamic27204-5-13-Video-021a75e56847d574b9acbcc06c675055_30hz
+    - dynamic26872-17-20-Video-021a75e56847d574b9acbcc06c675055_30hz
+    - dynamic27204-5-13-Video-021a75e56847d574b9acbcc06c675055_30hz
+    - dynamic17797-8-5-Video-021a75e56847d574b9acbcc06c675055_30hz
 
 dropout:
   attn: 0.2
