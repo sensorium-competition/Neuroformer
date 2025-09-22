@@ -17,9 +17,7 @@ def binned_spike_count(spike_times, bin_size):
     return counts, bins
 
 
-pickle_file = (
-    "results_trial_dynamic26872-17-20-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl"
-)
+pickle_file = "./models/test_7/inference/results_trial_dynamic26872-17-20-Video-021a75e56847d574b9acbcc06c675055_30hz.pkl"
 result = pickle.load(open(pickle_file, "rb"))
 
 gt_counts = {}

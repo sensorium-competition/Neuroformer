@@ -169,7 +169,7 @@ def load_experanto(config, data_path):
     total_timesteps = data["spikes"].shape[1]
     intervals = np.arange(0, total_timesteps * config.resolution.dt, config.window.curr)
     train_intervals, test_intervals, finetune_intervals = split_data_by_interval(
-        intervals, r_split=0.99, r_split_ft=0.001
+        intervals, r_split=0.999, r_split_ft=0.001
     )
 
     return (

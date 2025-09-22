@@ -51,7 +51,7 @@ if running_jupyter():  # or __name__ == "__main__":
     # Using a config file that specifies multiple data paths
     args.config = "./configs/Experanto/mconf_all_30Hz_two.yaml"
     args.dataset = "experanto"
-    args.ckpt_path = "./models/test_7"
+    args.ckpt_path = "./models/train_8"
     args.predict_modes = ["treadmill"]
 else:
     print("Running in terminal")
@@ -132,7 +132,7 @@ for i, data_path in enumerate(config.data.paths):
         config,
         dataset=args.dataset,
         frames=frames,
-        intervals=test_intervals,
+        intervals=train_intervals,
         modalities=modalities,
     )
 

@@ -400,7 +400,7 @@ elif config.gru2_only:
 else:
     model_name = "Neuroformer"
 
-CKPT_PATH = f"./models/NF.15/Visnav_VR_Expt/{args.dataset}/{model_name}/{args.title}/train_8/{str(config.layers)}/{args.seed}"
+CKPT_PATH = f"./models/NF.15/Visnav_VR_Expt/{args.dataset}/{model_name}/{args.title}/sec_1_beh/{str(config.layers)}/{args.seed}"
 CKPT_PATH = CKPT_PATH.replace("namespace", "").replace(" ", "_")
 
 if os.path.exists(CKPT_PATH):
