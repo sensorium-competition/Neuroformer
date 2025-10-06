@@ -73,43 +73,43 @@ window:
   frame: 1.0
   curr: 1.0
   prev: 1.0
-#   treadmill: 1.0  # Adding this allows for loss being calculated for all modalities and adds modalities to the target
-#   dillation: 1.0
-#   d_dilation: 1.0
-#   pupil_x: 1.0
-#   pupil_y: 1.0
+  treadmill: 1.0  # Adding this allows for loss being calculated for all modalities and adds modalities to the target
+  dillation: 1.0
+  d_dilation: 1.0
+  pupil_x: 1.0
+  pupil_y: 1.0
 
-# # modality-specific parameters
-# modalities:
-#   behavior:
-#     n_layers: 4
-#     variables: 
-#       dilation:
-#         data: dilation
-#         dt: 1.0
-#         objective: regression
-#         predict: true
-#       d_dilation:
-#         data: d_dilation
-#         dt: 1.0
-#         objective: regression
-#         predict: true
-#       pupil_x:
-#         data: pupil_x
-#         dt: 1.0
-#         objective: regression
-#         predict: true
-#       pupil_y:
-#         data: pupil_y
-#         dt: 1.0
-#         objective: regression
-#         predict: true
-#       treadmill:
-#         data: treadmill
-#         dt: 1.0
-#         objective: regression
-#         predict: true
-#     window: 1.0
+# modality-specific parameters
+modalities:
+  behavior:
+    n_layers: 4
+    variables: 
+      dilation:
+        data: dilation
+        dt: 1.0
+        objective: regression
+        predict: true
+      d_dilation:
+        data: d_dilation
+        dt: 1.0
+        objective: regression
+        predict: true
+      pupil_x:
+        data: pupil_x
+        dt: 1.0
+        objective: regression
+        predict: true
+      pupil_y:
+        data: pupil_y
+        dt: 1.0
+        objective: regression
+        predict: true
+      treadmill:
+        data: treadmill
+        dt: 1.0
+        objective: regression
+        predict: true
+    window: 1.0
 
 predict: null
 

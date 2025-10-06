@@ -13,9 +13,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 sys.path.append(
     "/mnt/vast-react/projects/agsinz_foundation_model_brain/goirik/Neuroformer"
 )
-from SpikeVidUtils import SpikeTimeVidData2
 from torch.utils.data.dataloader import DataLoader
-from utils import predict_raster_recursive_time_auto, process_predictions
+
+from .SpikeVidUtils import SpikeTimeVidData2
+from .utils import predict_raster_recursive_time_auto, process_predictions
 
 
 def get_rates(df, intervals):
