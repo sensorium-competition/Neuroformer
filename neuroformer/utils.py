@@ -324,9 +324,15 @@ def process_predictions(results, stoi, itos, window):
     df_pred["Time"] = df_pred["dt"] + df_pred["Interval"]
     df_pred = df_pred[df_pred["Interval"] > 0]
     # df_pred = df_pred[(df_pred['ID'] <= stoi['SOS']) & (df_pred['dt'] <= window) & (df_pred['Time'] >= 0)]
-    true_keys = ["true", "time"]
+    true_keys = ["true", "time", "Trial_gt", "Interval_gt"]
     true_dict = {k: results[k] for k in results if k in true_keys}
     df_true = pd.DataFrame(true_dict)
+
+    forbidden_tokens = ["SOS", "EOS", "PAD"]
+    df_true = pd.DataFrame(true_dict)
+    df_true = df_true[(df_true != "SOS").all(axis=1)].reset_index(drop=True)
+    df_true = df_true[(df_true != "EOS").all(axis=1)].reset_index(drop=True)
+    df_true = df_true[(df_true != "PAD").all(axis=1)].reset_index(drop=True)
     # if 'SOS' in stoi:
     #     # sos_id = list(itos.keys())[list(itos.values()).index('SOS')]
     #     sos_id = stoi['SOS']
@@ -339,7 +345,14 @@ def process_predictions(results, stoi, itos, window):
     #     n_eos = len(df_true[df_true['true'] == eos_id])
     #     print(f'EOS fouuuund: {n_eos}')
     #     df_true = df_true[df_true['true'] != eos_id]
-    df_true.rename({"true": "ID", "time": "dt"}, axis=1, inplace=True)
+    df_true.rename(
+        {"true": "ID", "time": "dt", "Trial_gt": "Trial", "Interval_gt": "Interval"},
+        axis=1,
+        inplace=True,
+    )
+
+    df_true["Time"] = df_true["dt"] + df_true["Interval"]
+    df_true = df_true[df_true["Interval"] > 0]
     # df_true['time'] = df_true['dt'] + df_true['interval'] - 0.5
 
     return df_pred.reset_index(drop=True), df_true.reset_index(drop=True)

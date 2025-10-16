@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=baseline
+#SBATCH --job-name=Neuroformer_inf
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --partition=react    # see https://www.hlrn.de/doc/display/PUB/Compute+node+partitions for a list of accessible hlrn partitions
@@ -41,4 +41,4 @@ python -m torch.utils.collect_env
 # python neuroformer_train_experanto_multisession.py --dataset experanto --config configs/Experanto/mconf_all_30Hz_published-5.yaml
 # python neuroformer_train_experanto_multisession.py --dataset experanto --config configs/Experanto/mconf_all_30Hz_all-12.yaml
 # python neuroformer_inference_multi.py --dataset experanto --config configs/Experanto/mconf_all_30Hz_two.yaml --ckpt_path ./models/test --dataset experanto --predict_modes ['treadmill']
-python neuroformer_inference_multi.py --dataset experanto --config configs/Experanto/mconf_all_30Hz_all-12.yaml --ckpt_path ./models/train_8_1_sec --dataset experanto --predict_modes treadmill
+python neuroformer_inference_multi.py --dataset experanto --config configs/Experanto/mconf_all_30Hz_all-12_1_sec_beh_val.yaml --ckpt_path ./models/train_8_1_sec_beh --dataset experanto --predict_modes treadmill

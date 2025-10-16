@@ -209,6 +209,8 @@ def generate_spikes(
     data["true"] = []
     data["ID"] = context
     data["time"] = []
+    data["Interval_gt"] = []
+    data["Trial_gt"] = []
     data["dt"] = context
     data["Trial"] = context
     data["Interval"] = context
@@ -404,6 +406,10 @@ def generate_spikes(
         data["time"] = data["time"] + dty_itos
         # data['true'] = torch.cat((data['true'], y['id'][:, :T_id - pad].flatten()))
         data["true"] = data["true"] + list(y["id"][:, : T_id - pad].flatten())
+        data["Trial_gt"] = data["Trial_gt"] + len(dty_itos) * [x["trial"].item()]
+        data["Interval_gt"] = data["Interval_gt"] + len(dty_itos) * [
+            x["interval"].item()
+        ]
         pbar.set_description(
             f"len pred: {len(data['ID'])}, len true: {len(data['true'])}"
         )
